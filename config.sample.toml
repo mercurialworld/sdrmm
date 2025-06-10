@@ -1,0 +1,9 @@
+[drm]
+url = "http://localhost"
+port = 13337
+
+[bsr]
+request-limit = 0               # set this to 0 to allow unlimited requests
+newer-than = 2018-05-08         # ISO 8601 formatted date
+filter = true                   # filter out questionable metadata
+filter-message = "[REDACTED]"
