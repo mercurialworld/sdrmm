@@ -41,3 +41,8 @@ type QueueCmd struct {
 type ClearCmd struct {
 	SaveQueue bool `arg:"--save" default:"false" help:"Whether to save the queue as it was before deleting all of it, in case you want to refund points or something"`
 }
+
+// Undo last request
+type OopsCmd struct {
+	User string `arg:"positional" help:"The username who invoked the !oops command."`
+}

@@ -17,6 +17,7 @@ func Parse() (string, []byte, any, error) {
 		Clear    *ClearCmd    `arg:"subcommand:clear" help:"Clear the queue"`
 		Ban      *BanCmd      `arg:"subcommand:ban" help:"Ban a map from being requested"`
 		Unban    *UnbanCmd    `arg:"subcommand:unban" help:"Unban a map from being requested"`
+		Oops     *OopsCmd     `arg:"subcommand:oops" help:"Undo a user's recent request"`
 	}
 
 	arg.MustParse(&args)
@@ -80,6 +81,11 @@ func Parse() (string, []byte, any, error) {
 	case args.Unban != nil:
 		fmt.Printf("Unbanning map %s", args.Unban.Id)
 		return "unban", RequestDRM("query", args.Unban.Id), nil, nil
+
+	case args.Oops != nil:
+		// TODO: cache entire queue
+		// pop the person's most recent request out of it
+		// then add the entire queue one by one :^)
 	}
 
 	return "", nil, nil, fmt.Errorf("error in argument parsing: %s", os.Args)
