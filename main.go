@@ -51,6 +51,7 @@ func main() {
 			}
 
 			fmt.Printf("%s", drm.RequestDRM("addKey", addKeyArgs))
+			// TODO: increment request counter
 		}
 
 	// ban/unban map

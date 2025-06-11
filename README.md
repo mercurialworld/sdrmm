@@ -21,6 +21,15 @@ port = 13337                    # Port of the DRM API
 [bsr]
 request-limit = 0               # number of requests allowed for each person per session 
 newer-than = 2018-05-08         # ISO 8601 formatted date (YYYY-MM-DD)
+map-age = 0                     # how old the map should be, in days
+
+[nps]
+min = 0
+max = 0                         # set this to 0 to just not have limits
+
+[njs]
+min = 0
+max = 0                         # set this to 0 to just not have limits
 ```
 
 # Usage
