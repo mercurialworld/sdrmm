@@ -69,11 +69,7 @@ INSERT INTO reqLimits(username, requests) VALUES ?, ?
 	return userRow.requests
 }
 
-func SetUserRequests(user string, db *sql.DB) {
-	numReqs := GetUserRequests(user, db)
-
-	numReqs++
-
+func SetUserRequests(user string, numReqs int, db *sql.DB) {
 	_, err := db.Query(`
 INSERT INTO reqLimits(username, requests) VALUES ?, ?	
 	`, user, numReqs)

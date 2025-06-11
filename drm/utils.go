@@ -9,7 +9,7 @@ import (
 	"rustlang.pocha.moe/sdrmm/utils"
 )
 
-func requestDRM(endpoint string, arguments string) []byte {
+func RequestDRM(endpoint string, arguments string) []byte {
 	drmURL := viper.GetString("drm.url")
 	drmPort := viper.GetString("drm.port")
 
@@ -23,7 +23,7 @@ func requestDRM(endpoint string, arguments string) []byte {
 }
 
 func whereDRM(user string) []int {
-	resBody := requestDRM("queue", "where/"+user)
+	resBody := RequestDRM("queue", "where/"+user)
 
 	var resQueueData []QueuePositionData
 

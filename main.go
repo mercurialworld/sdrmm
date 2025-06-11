@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -23,7 +24,8 @@ func main() {
 
 	db := database.InitializeDB()
 
-	cmd, res, extra := drm.Parse() // returns json
+	cmd, res, extra, err := drm.Parse() // returns json
+	utils.HandleError(err)
 
 	fmt.Printf("Command type is %s\n", cmd)
 	fmt.Printf("%s\n", res)
@@ -32,9 +34,39 @@ func main() {
 		fmt.Print(extra)
 	}
 
-	// do something with json (serialize, filter, etc)
+	switch cmd {
+	// add to queue
+	case "add":
+		var mapToQueue drm.MapData
+		json.Unmarshal(res, &mapToQueue)
 
-	// add to database
+		mapToQueue, err := FilterMap(mapToQueue, db)
+		if err != nil {
+			fmt.Printf("{\"message\": %s}", err)
+		} else {
+			addKeyArgs := mapToQueue.BsrKey
+
+			if username, ok := extra.(string); ok && username != "" {
+				addKeyArgs += "?user=" + username
+			}
+
+			fmt.Printf("%s", drm.RequestDRM("addKey", addKeyArgs))
+		}
+
+	// ban/unban map
+	case "ban":
+		var mapToBan drm.MapData
+		json.Unmarshal(res, &mapToBan)
+		database.BanMap(mapToBan.BsrKey, mapToBan.Hash, db)
+	case "unban":
+		var mapToUnban drm.MapData
+		json.Unmarshal(res, &mapToUnban)
+		database.UnbanMap(mapToUnban.BsrKey, db)
+
+	// anything else
+	default:
+		fmt.Printf("%s", res)
+	}
 
 	database.CloseDB(db)
 }

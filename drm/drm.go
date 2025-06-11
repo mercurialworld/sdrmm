@@ -2,11 +2,12 @@ package drm
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/alexflint/go-arg"
 )
 
-func Parse() (string, []byte, any) {
+func Parse() (string, []byte, any, error) {
 	var args struct {
 		Request  *RequestCmd  `arg:"subcommand:request" help:"Put a map in the queue"`
 		Mtt      *MttCmd      `arg:"subcommand:mtt" help:"Put a user's request to the top of the queue"`
@@ -22,27 +23,24 @@ func Parse() (string, []byte, any) {
 
 	switch {
 	case args.Request != nil:
-		requestArg := args.Request.Id
-
 		if args.Request.User != "" {
 			fmt.Printf("User %s r", args.Request.User)
-			requestArg += "?user=" + args.Request.User
 		} else {
 			fmt.Printf("R")
 		}
 		fmt.Printf("equested map %s\n", args.Request.Id)
 
-		return "add", requestDRM("addKey", requestArg), nil
+		return "add", RequestDRM("query", ""), args.Request.User, nil
 
 	case args.Mtt != nil:
 		fmt.Printf("Putting first request of user %s to top of queue\n", args.Mtt.User)
 		pos := fmt.Sprintf("%d", whereDRM(args.Mtt.User)[0])
 
-		return "mtt", requestDRM("queue", "move/"+pos+"/1"), nil
+		return "mtt", RequestDRM("queue", "move/"+pos+"/1"), nil, nil
 
 	case args.Wip != nil:
 		fmt.Printf("User %s requested WIP %s\n", args.Wip.User, args.Wip.Id)
-		return "wip", requestDRM("addWip", args.Wip.Id+"?user="+args.Wip.User), nil
+		return "wip", RequestDRM("addWip", args.Wip.Id+"?user="+args.Wip.User), nil, nil
 
 	case args.GetQueue != nil:
 		fmt.Printf("Queue requested")
@@ -55,7 +53,7 @@ func Parse() (string, []byte, any) {
 		}
 
 		// this will work for sure
-		return "getqueue", requestDRM("queue", ""), pos
+		return "getqueue", RequestDRM("queue", ""), pos, nil
 
 	case args.Queue != nil:
 		// TODO: queue state management
@@ -70,21 +68,19 @@ func Parse() (string, []byte, any) {
 		var queue []byte = nil
 
 		if args.Clear.SaveQueue {
-			queue = requestDRM("queue", "")
+			queue = RequestDRM("queue", "")
 		}
 
-		return "clear", requestDRM("queue", "clear"), queue
+		return "clear", RequestDRM("queue", "clear"), queue, nil
 
 	case args.Ban != nil:
-		fmt.Printf("Map %s banned", args.Ban.Id)
-
-		// TODO: add to database of banned map
+		fmt.Printf("Banning map %s", args.Ban.Id)
+		return "ban", RequestDRM("query", args.Ban.Id), nil, nil
 
 	case args.Unban != nil:
-		fmt.Printf("Map %s unbanned", args.Unban.Id)
-
-		// TODO: remove from database of banned map
+		fmt.Printf("Unbanning map %s", args.Unban.Id)
+		return "unban", RequestDRM("query", args.Unban.Id), nil, nil
 	}
 
-	return "", nil, nil
+	return "", nil, nil, fmt.Errorf("error in argument parsing: %s", os.Args)
 }

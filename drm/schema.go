@@ -22,7 +22,7 @@ type MapData struct {
 	// other map metadata
 	Duration   int
 	Votes      []int // upvotes, downvotes
-	Rating     float32
+	Rating     float64
 	UploadTime utils.UnixTime // hopefully this works
 	LastUpdate utils.UnixTime
 	Cover      string
@@ -57,11 +57,11 @@ type MapData struct {
 type MapDifficultyData struct {
 	Difficulty      string
 	Characteristic  string
-	NoteJumpSpeed   float32
-	NotesPerSecond  float32
+	NoteJumpSpeed   float64
+	NotesPerSecond  float64
 	MapMods         IMapMods
-	ScoreSaberStars float32
-	BeatLeaderStars float32
+	ScoreSaberStars float64
+	BeatLeaderStars float64
 }
 
 type IMapMods struct {
