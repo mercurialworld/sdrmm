@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
 	"rustlang.pocha.moe/sdrmm/utils"
 )
@@ -20,6 +21,8 @@ func readConfig() {
 func main() {
 	readConfig()
 
+	db := database.InitializeDB()
+
 	cmd, res, extra := drm.Parse() // returns json
 
 	fmt.Printf("Command type is %s\n", cmd)
@@ -32,4 +35,6 @@ func main() {
 	// do something with json (serialize, filter, etc)
 
 	// add to database
+
+	database.CloseDB(db)
 }

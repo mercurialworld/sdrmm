@@ -2,9 +2,24 @@
 
 It's not as smart as I thought it would be. Made for my use case (Mix It Up allows me to call executables with arguments). 
 
+# TODO
+- return the original message, or errors if there are any
+
 # Setup
 
 probably going to need MIU open so it can receive webhooks (for queue open/closed status)
+
+# Config
+
+```toml
+[drm]
+url = "http://localhost"        # IP of the machine the BS client is on, if you have a different one
+port = 13337                    # Port of the DRM API
+
+[bsr]
+request-limit = 0               # number of requests allowed for each person per session 
+newer-than = 2018-05-08         # ISO 8601 formatted date (YYYY-MM-DD)
+```
 
 # Usage
 
