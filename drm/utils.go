@@ -2,6 +2,7 @@ package drm
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -13,7 +14,11 @@ func RequestDRM(endpoint string, arguments string) []byte {
 	drmURL := viper.GetString("drm.url")
 	drmPort := viper.GetString("drm.port")
 
-	res, err := http.Get(drmURL + ":" + drmPort + "/" + endpoint + "/" + arguments)
+	requestURL := drmURL + ":" + drmPort + "/" + endpoint + "/" + arguments
+
+	fmt.Println(requestURL)
+
+	res, err := http.Get(requestURL)
 	utils.PanicOnError(err)
 
 	resBody, err := io.ReadAll(res.Body)

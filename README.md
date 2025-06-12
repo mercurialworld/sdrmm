@@ -15,13 +15,15 @@ probably going to need MIU open so it can receive webhooks (for queue open/close
 
 ```toml
 [drm]
-url = "http://localhost"        # IP of the machine the BS client is on, if you have a different one
-port = 13337                    # Port of the DRM API
+url = "http://localhost"
+port = 13337
 
 [bsr]
-request-limit = 0               # number of requests allowed for each person per session 
-newer-than = 2018-05-08         # ISO 8601 formatted date (YYYY-MM-DD)
-map-age = 0                     # how old the map should be, in days
+request-limit = 0               # set this to 0 to allow unlimited requests
+newer-than = 2018-05-08         # ISO 8601 formatted date
+map-age = 0                     # how many days old the map should be
+min-length = 0                  # min length of the song, in seconds
+max-length = 0                  # max length of the song, in seconds
 
 [nps]
 min = 0

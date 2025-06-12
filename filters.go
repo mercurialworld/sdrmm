@@ -72,7 +72,7 @@ func FilterMap(mapData drm.MapData, db *sql.DB) (drm.MapData, error) {
 
 	// is the map older than a certain date?
 	if isOlder(uploadTime) {
-		return mapData, &OlderThanOldestDateError{mapData.UploadTime}
+		return mapData, &OlderThanOldestDateError{date: mapData.UploadTime}
 	}
 
 	// has the map released bsr.map-age days ago?

@@ -32,7 +32,7 @@ func Parse() (string, []byte, any, error) {
 		}
 		fmt.Printf("equested map %s\n", args.Request.Id)
 
-		return "add", drm.RequestDRM("query", ""), args.Request.User, nil
+		return "add", drm.RequestDRM("query", args.Request.Id), args.Request.User, nil
 
 	case args.Mtt != nil:
 		fmt.Printf("Putting first request of user %s to top of queue\n", args.Mtt.User)
@@ -76,11 +76,11 @@ func Parse() (string, []byte, any, error) {
 		return "clear", drm.RequestDRM("queue", "clear"), queue, nil
 
 	case args.Ban != nil:
-		fmt.Printf("Banning map %s", args.Ban.Id)
+		fmt.Printf("Banning map %s\n", args.Ban.Id)
 		return "ban", drm.RequestDRM("query", args.Ban.Id), nil, nil
 
 	case args.Unban != nil:
-		fmt.Printf("Unbanning map %s", args.Unban.Id)
+		fmt.Printf("Unbanning map %s\n", args.Unban.Id)
 		return "unban", drm.RequestDRM("query", args.Unban.Id), nil, nil
 
 	case args.Oops != nil:

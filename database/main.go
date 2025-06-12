@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "modernc.org/sqlite"
 
@@ -45,8 +46,10 @@ func FindBannedMap(id string, db *sql.DB) bool {
 
 	// if it's in the database, it's banned
 	if err := db.QueryRow(`
-SELECT (id, hash) FROM banned WHERE id=?	
-	`, id).Scan(theMap.id, theMap.hash); err != nil {
+SELECT id, hash FROM banned WHERE id=?	
+	`, id).Scan(&theMap.id, &theMap.hash); err != nil {
+		fmt.Printf("%s", err)
+		fmt.Printf("map: %s\n", theMap)
 		return false
 	}
 
@@ -58,7 +61,7 @@ func GetUserRequests(user string, db *sql.DB) int {
 
 	if err := db.QueryRow(`
 SELECT (username, requests) FROM reqLimits WHERE username=?	
-	`, user).Scan(userRow.user, userRow.requests); err != nil {
+	`, user).Scan(&userRow.user, &userRow.requests); err != nil {
 		if err == sql.ErrNoRows {
 			_, err = db.Query(`
 INSERT INTO reqLimits(username, requests) VALUES ?, ?	
