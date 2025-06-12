@@ -27,5 +27,5 @@ func (u *UnixTime) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON turns our time.Time back into an int
 func (u UnixTime) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d", (u.Time.Unix()))), nil
+	return fmt.Appendf(nil, "%d", (u.Time.Unix())), nil
 }
