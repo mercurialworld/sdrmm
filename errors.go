@@ -55,3 +55,21 @@ type BannedMapError struct {
 func (e *BannedMapError) Error() string {
 	return fmt.Sprintf("%s is banned from being requested", e.id)
 }
+
+// Map too short
+type MapTooShortError struct {
+	len int
+}
+
+func (e *MapTooShortError) Error() string {
+	return fmt.Sprintf("map is too short (length %d:%d)", (e.len/60)%60, e.len%60)
+}
+
+// Map too long
+type MapTooLongError struct {
+	len int
+}
+
+func (e *MapTooLongError) Error() string {
+	return fmt.Sprintf("map is too long (length %d:%d)", (e.len/60)%60, e.len%60)
+}

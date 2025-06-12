@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
+	"rustlang.pocha.moe/sdrmm/parser"
 	"rustlang.pocha.moe/sdrmm/utils"
 )
 
@@ -16,7 +17,7 @@ func readConfig() {
 	viper.AddConfigPath(".")
 
 	err := viper.ReadInConfig()
-	utils.HandleError(err)
+	utils.PanicOnError(err)
 }
 
 func main() {
@@ -24,8 +25,8 @@ func main() {
 
 	db := database.InitializeDB()
 
-	cmd, res, extra, err := drm.Parse() // returns json
-	utils.HandleError(err)
+	cmd, res, extra, err := parser.Parse() // returns json
+	utils.PanicOnError(err)
 
 	fmt.Printf("Command type is %s\n", cmd)
 	fmt.Printf("%s\n", res)

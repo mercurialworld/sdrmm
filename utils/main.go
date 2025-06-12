@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-func HandleError(err error) {
+func PanicOnError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
