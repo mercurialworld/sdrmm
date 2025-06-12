@@ -73,3 +73,12 @@ type MapTooLongError struct {
 func (e *MapTooLongError) Error() string {
 	return fmt.Sprintf("map is too long (length %d:%d)", (e.len/60)%60, e.len%60)
 }
+
+// User doesn't have any requests in queue
+type UserMaxRequestsError struct {
+	user string
+}
+
+func (e *UserMaxRequestsError) Error() string {
+	return fmt.Sprintf("User %s requested too many maps this stream", e.user)
+}

@@ -1,24 +1,27 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/alexflint/go-arg"
 	"rustlang.pocha.moe/sdrmm/drm"
+	"rustlang.pocha.moe/sdrmm/utils"
 )
 
 func Parse() (string, []byte, any, error) {
 	var args struct {
-		Request  *drm.RequestCmd  `arg:"subcommand:request" help:"Put a map in the queue"`
-		Mtt      *drm.MttCmd      `arg:"subcommand:mtt" help:"Put a user's request to the top of the queue"`
-		Wip      *drm.WipCmd      `arg:"subcommand:wip" help:"Put a WIP in the queue"`
-		GetQueue *drm.GetQueueCmd `arg:"subcommand:getqueue" help:"Get the queue"`
-		Queue    *drm.QueueCmd    `arg:"subcommand:queue" help:"Toggle/get queue open/closed status"`
-		Clear    *drm.ClearCmd    `arg:"subcommand:clear" help:"Clear the queue"`
-		Ban      *drm.BanCmd      `arg:"subcommand:ban" help:"Ban a map from being requested"`
-		Unban    *drm.UnbanCmd    `arg:"subcommand:unban" help:"Unban a map from being requested"`
-		Oops     *drm.OopsCmd     `arg:"subcommand:oops" help:"Undo a user's recent request"`
+		Request  *drm.RequestCmd    `arg:"subcommand:request" help:"Put a map in the queue"`
+		Mtt      *drm.MttCmd        `arg:"subcommand:mtt" help:"Put a user's request to the top of the queue"`
+		Wip      *drm.WipCmd        `arg:"subcommand:wip" help:"Put a WIP in the queue"`
+		GetQueue *drm.GetQueueCmd   `arg:"subcommand:getqueue" help:"Get the queue"`
+		Queue    *drm.QueueCmd      `arg:"subcommand:queue" help:"Toggle/get queue open/closed status"`
+		Clear    *drm.ClearCmd      `arg:"subcommand:clear" help:"Clear the queue"`
+		Ban      *drm.BanCmd        `arg:"subcommand:ban" help:"Ban a map from being requested"`
+		Unban    *drm.UnbanCmd      `arg:"subcommand:unban" help:"Unban a map from being requested"`
+		Oops     *drm.OopsCmd       `arg:"subcommand:oops" help:"Undo a user's recent request"`
+		New      *drm.NewSessionCmd `arg:"subcommand:new" help:"Start a new session"`
 	}
 
 	arg.MustParse(&args)
@@ -70,7 +73,9 @@ func Parse() (string, []byte, any, error) {
 		var queue []byte = nil
 
 		if args.Clear.SaveQueue {
-			queue = drm.RequestDRM("queue", "")
+			queue = drm.GetDRMQueue()
+			err := os.WriteFile("queue.json", queue, 0644)
+			utils.PanicOnError(err)
 		}
 
 		return "clear", drm.RequestDRM("queue", "clear"), queue, nil
@@ -84,9 +89,46 @@ func Parse() (string, []byte, any, error) {
 		return "unban", drm.RequestDRM("query", args.Unban.Id), nil, nil
 
 	case args.Oops != nil:
-		// TODO: cache entire queue
+		// cache entire queue
+		queue := drm.GetDRMQueue()
+
+		var queueData []drm.MapData
+		err := json.Unmarshal(queue, &queueData)
+		utils.PanicOnError(err)
+
+		// get index of last request
+		userRequests := drm.WhereDRM(args.Oops.User)
+		userLastRequestIndex := userRequests[len(userRequests)-1]
+		var userLastRequest drm.MapData = drm.MapData{}
+
 		// pop the person's most recent request out of it
-		// then add the entire queue one by one :^)
+		var newQueue []drm.MapData
+		for idx, currentMap := range queueData {
+			if idx != userLastRequestIndex {
+				userLastRequest = currentMap
+				newQueue = append(newQueue, currentMap)
+			}
+		}
+
+		// if the user has any requests in queue
+		if userLastRequest.BsrKey != "" {
+			// clear queue
+			drm.RequestDRM("queue", "clear")
+
+			// then add the entire new queue one by one :^)
+			for _, currentMap := range newQueue {
+				drm.RequestDRM("addKey", currentMap.BsrKey+"?user="+currentMap.User)
+			}
+
+			lastRequest, _ := json.Marshal(userLastRequest)
+
+			return "oops", lastRequest, nil, nil
+		} else {
+			return "oops", nil, nil, fmt.Errorf("user %s does not have any requests in the queue", args.Oops.User)
+		}
+
+	case args.New != nil:
+		return "new", nil, nil, nil
 	}
 
 	return "", nil, nil, fmt.Errorf("error in argument parsing: %s", os.Args)

@@ -63,9 +63,11 @@ func GetUserRequests(user string, db *sql.DB) int {
 SELECT (username, requests) FROM reqLimits WHERE username=?	
 	`, user).Scan(&userRow.user, &userRow.requests); err != nil {
 		if err == sql.ErrNoRows {
-			_, err = db.Query(`
+			newUser, err := db.Query(`
 INSERT INTO reqLimits(username, requests) VALUES ?, ?	
 			`, user, 0)
+
+			newUser.Scan(&userRow.user, &userRow.requests)
 			utils.PanicOnError(err)
 		}
 	}
@@ -77,5 +79,12 @@ func SetUserRequests(user string, numReqs int, db *sql.DB) {
 	_, err := db.Query(`
 INSERT INTO reqLimits(username, requests) VALUES ?, ?	
 	`, user, numReqs)
+	utils.PanicOnError(err)
+}
+
+func ClearRequestLimits(db *sql.DB) {
+	_, err := db.Query(`
+DELETE * FROM reqLimits 
+	`)
 	utils.PanicOnError(err)
 }

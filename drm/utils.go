@@ -43,3 +43,8 @@ func WhereDRM(user string) []int {
 
 	return positions
 }
+
+func GetDRMQueue() []byte {
+	resBody := RequestDRM("queue", "")
+	return resBody
+}

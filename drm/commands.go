@@ -3,7 +3,7 @@ package drm
 // BeatSaver request by a user
 type RequestCmd struct {
 	Id   string `arg:"positional,required" help:"The BeatSaver ID of the map to be requested"`
-	User string `arg:"-u" help:"The username of the requester"`
+	User string `arg:"-u,required" help:"The username of the requester"`
 }
 
 // Put a request to top of the queue
@@ -46,3 +46,6 @@ type ClearCmd struct {
 type OopsCmd struct {
 	User string `arg:"positional" help:"The username who invoked the !oops command."`
 }
+
+// New session
+type NewSessionCmd struct{}

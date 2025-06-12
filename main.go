@@ -56,7 +56,6 @@ func main() {
 	utils.PanicOnError(err)
 
 	fmt.Printf("Command type is %s\n", cmd)
-	fmt.Printf("%s\n", res)
 
 	if extra != nil {
 		fmt.Printf("%s\n", extra)
@@ -68,18 +67,26 @@ func main() {
 		var mapToQueue drm.MapData
 		json.Unmarshal(res, &mapToQueue)
 
-		mapToQueue, err := FilterMap(mapToQueue, db)
-		if err != nil {
-			fmt.Printf("{\"message\": \"%s\"}", err)
-		} else {
-			addKeyArgs := mapToQueue.BsrKey
+		if username, ok := extra.(string); ok && username != "" {
 
-			if username, ok := extra.(string); ok && username != "" {
-				addKeyArgs += "?user=" + username
+			mapToQueue, err := FilterMap(mapToQueue, username, db)
+			if err != nil {
+				fmt.Printf("{\"message\": \"%s\"}", err)
+			} else {
+				addKeyArgs := mapToQueue.BsrKey + "?user=" + username
+				drm.RequestDRM("addKey", addKeyArgs)
+
+				requestLimit := viper.GetInt("request-limit")
+
+				// increment request counter
+				if requestLimit != 0 {
+					userNumRequests := database.GetUserRequests(username, db)
+					userNumRequests++
+
+					database.SetUserRequests(username, userNumRequests, db)
+				}
 			}
 
-			fmt.Printf("%s", drm.RequestDRM("addKey", addKeyArgs))
-			// TODO: increment request counter
 		}
 
 	// ban/unban map
@@ -91,6 +98,14 @@ func main() {
 		var mapToUnban drm.MapData
 		json.Unmarshal(res, &mapToUnban)
 		database.UnbanMap(mapToUnban.BsrKey, db)
+
+	// new session
+	case "new":
+		// remove all request limits
+		database.ClearRequestLimits(db)
+		// remove the queue (no caching)
+		drm.RequestDRM("queue", "clear")
+		fmt.Println("\"message\": \"New session created\"")
 
 	// anything else
 	default:

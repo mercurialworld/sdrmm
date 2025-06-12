@@ -41,6 +41,12 @@ func isLonger(mapLength int, maxLength int) bool {
 	return mapLength > maxLength
 }
 
+func userRequestedTooMuch(requestLimit int, username string, db *sql.DB) bool {
+	userNumRequests := database.GetUserRequests(username, db)
+
+	return userNumRequests == requestLimit
+}
+
 func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, bool) {
 	// doing NPS and NJS checks in one loop, screw it
 	var passedNJSCheck = false
@@ -62,7 +68,7 @@ func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, boo
 	return passedNJSCheck, passedNPSCheck
 }
 
-func FilterMap(mapData drm.MapData, db *sql.DB) (drm.MapData, error) {
+func FilterMap(mapData drm.MapData, username string, db *sql.DB) (drm.MapData, error) {
 	// is the map banned?
 	if isBanned(mapData.BsrKey, db) {
 		return mapData, &BannedMapError{id: mapData.BsrKey}
@@ -110,6 +116,12 @@ func FilterMap(mapData drm.MapData, db *sql.DB) (drm.MapData, error) {
 
 	if !passedNPSCheck {
 		return mapData, &NotInNPSRangeError{minNPS: noteLimits.minNPS, maxNPS: noteLimits.maxNPS}
+	}
+
+	// did the user request enough maps this stream?
+	requestLimit := viper.GetInt("request-limit")
+	if requestLimit != 0 && userRequestedTooMuch(requestLimit, username, db) {
+		return mapData, &UserMaxRequestsError{user: username}
 	}
 
 	// passed filters!
