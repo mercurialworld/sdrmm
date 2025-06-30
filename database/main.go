@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 
 	_ "modernc.org/sqlite"
 
@@ -15,11 +14,17 @@ func InitializeDB() *sql.DB {
 
 	_, err = db.Exec(`
 CREATE TABLE IF NOT EXISTS banned(id TEXT PRIMARY KEY NOT NULL, hash TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS reqlimits(username TEXT PRIMARY KEY NOT NULL, requests INT);
+CREATE TABLE IF NOT EXISTS reqlimits(username TEXT PRIMARY KEY NOT NULL, requests INT NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS queueStatus(timestamp INT PRIMARY KEY NOT NULL, status BOOLEAN);
 	`)
 	utils.PanicOnError(err)
 
 	return db
+}
+
+func NewSession(db *sql.DB) {
+	// add new session to queue status table
+	// set to... true?
 }
 
 func CloseDB(db *sql.DB) {
@@ -48,8 +53,6 @@ func FindBannedMap(id string, db *sql.DB) bool {
 	if err := db.QueryRow(`
 SELECT id, hash FROM banned WHERE id=?	
 	`, id).Scan(&theMap.id, &theMap.hash); err != nil {
-		fmt.Printf("%s", err)
-		fmt.Printf("map: %s\n", theMap)
 		return false
 	}
 
@@ -87,4 +90,9 @@ func ClearRequestLimits(db *sql.DB) {
 DELETE * FROM reqLimits 
 	`)
 	utils.PanicOnError(err)
+}
+
+func ToggleQueue(status bool, db *sql.DB) {
+	// order queueStatus by timestamp
+	// set newest timestamp's status to status
 }

@@ -1,9 +1,10 @@
-package drm
+package parser
 
 // BeatSaver request by a user
 type RequestCmd struct {
-	Id   string `arg:"positional,required" help:"The BeatSaver ID of the map to be requested"`
-	User string `arg:"-u,required" help:"The username of the requester"`
+	Id       string `arg:"positional,required" help:"The BeatSaver ID of the map to be requested"`
+	User     string `arg:"-u,required" help:"The username of the requester"`
+	Platform string `arg:"-p" help:"The platform the request was made from (YouTube, Twitch)`
 }
 
 // Put a request to top of the queue
