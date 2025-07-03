@@ -66,6 +66,10 @@ func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, boo
 	return passedNJSCheck, passedNPSCheck
 }
 
+func isClosed(db *sql.DB) bool {
+	return !database.GetQueueStatus(db)
+}
+
 func FilterMap(mapData drm.MapData, username string, numRequests int, modadd bool, db *sql.DB) (drm.MapData, error) {
 	if modadd {
 		return mapData, nil
@@ -82,6 +86,11 @@ func FilterMap(mapData drm.MapData, username string, numRequests int, modadd boo
 		maxNPS: viper.GetFloat64("nps.max"),
 	}
 	requestLimit := viper.GetInt("bsr.request-limit")
+
+	// is the queue closed?
+	if isClosed(db) {
+		return mapData, &QueueIsClosedError{}
+	}
 
 	// is the map banned?
 	if isBanned(mapData.BsrKey, db) {

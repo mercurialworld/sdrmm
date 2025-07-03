@@ -82,3 +82,10 @@ type UserMaxRequestsError struct {
 func (e *UserMaxRequestsError) Error() string {
 	return fmt.Sprintf("User %s requested too many maps this stream", e.user)
 }
+
+// Queue is closed
+type QueueIsClosedError struct{}
+
+func (e *QueueIsClosedError) Error() string {
+	return "The queue is closed!"
+}
