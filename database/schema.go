@@ -12,5 +12,5 @@ type ReqLimits struct {
 
 type QueueStatus struct {
 	status    bool
-	timestamp string
+	timestamp int
 }

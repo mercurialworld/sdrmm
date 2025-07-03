@@ -2,7 +2,6 @@ package drm
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -16,7 +15,7 @@ func RequestDRM(endpoint string, arguments string) []byte {
 
 	requestURL := drmURL + ":" + drmPort + "/" + endpoint + "/" + arguments
 
-	fmt.Println(requestURL)
+	// fmt.Println(requestURL)
 
 	res, err := http.Get(requestURL)
 	utils.PanicOnError(err)

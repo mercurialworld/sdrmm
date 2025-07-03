@@ -2,9 +2,9 @@ package parser
 
 // BeatSaver request by a user
 type RequestCmd struct {
-	Id       string `arg:"positional,required" help:"The BeatSaver ID of the map to be requested"`
-	User     string `arg:"-u,required" help:"The username of the requester"`
-	Platform string `arg:"-p" help:"The platform the request was made from (YouTube, Twitch)`
+	Id   string `arg:"positional,required" help:"The BeatSaver ID of the map to be requested"`
+	User string `arg:"-u,required" help:"The username of the requester"`
+	ModAdd bool `default:"false" help:"Whether to force the map in the queue"`
 }
 
 // Put a request to top of the queue
@@ -35,7 +35,9 @@ type UnbanCmd struct {
 
 // Get status of queue
 type QueueCmd struct {
-	Status bool `arg:"-s" help:"Get queue status"`
+	Status      bool `arg:"-s" help:"Get queue status"`
+	FromCommand bool `default:"false" help:"Whether this command is invoked from the websocket/webhook or a command."`
+	SetStatus   bool `help:"Set queue status"`
 }
 
 // Clear queue

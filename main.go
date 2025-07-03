@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"rustlang.pocha.moe/sdrmm/config"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/parser"
@@ -16,8 +14,6 @@ func main() {
 
 	cmd, args, err := parser.Parse() // returns json
 	utils.PanicOnError(err)
-
-	fmt.Printf("Command type is %s\n", cmd)
 
 	RunCommands(cmd, args, db)
 

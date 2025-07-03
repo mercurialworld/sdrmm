@@ -66,7 +66,11 @@ func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, boo
 	return passedNJSCheck, passedNPSCheck
 }
 
-func FilterMap(mapData drm.MapData, username string, numRequests int, db *sql.DB) (drm.MapData, error) {
+func FilterMap(mapData drm.MapData, username string, numRequests int, modadd bool, db *sql.DB) (drm.MapData, error) {
+	if modadd {
+		return mapData, nil
+	}
+
 	// grabbing config vars
 	minLength := viper.GetInt("min-length")
 	maxLength := viper.GetInt("max-length")

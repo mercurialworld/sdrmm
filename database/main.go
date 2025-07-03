@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -22,9 +23,12 @@ CREATE TABLE IF NOT EXISTS queueStatus(timestamp INT PRIMARY KEY NOT NULL, statu
 	return db
 }
 
-func NewSession(db *sql.DB) {
-	// add new session to queue status table
-	// set to... true?
+func NewSession(timestamp time.Time, db *sql.DB) {
+	// add new session to queue status table, with status set to false
+	_, err := db.Query(`
+INSERT INTO queueStatus(timestamp, status) VALUES (?, ?)
+	`, timestamp.Unix(), false)
+	utils.PanicOnError(err)
 }
 
 func CloseDB(db *sql.DB) {
@@ -63,11 +67,11 @@ func GetUserRequests(user string, db *sql.DB) int {
 	userRow := ReqLimits{user: user, requests: 0}
 
 	if err := db.QueryRow(`
-SELECT (username, requests) FROM reqLimits WHERE username=?	
+SELECT username, requests FROM reqLimits WHERE username=?	
 	`, user).Scan(&userRow.user, &userRow.requests); err != nil {
 		if err == sql.ErrNoRows {
 			newUser, err := db.Query(`
-INSERT INTO reqLimits(username, requests) VALUES ?, ?	
+INSERT INTO reqLimits(username, requests) VALUES (?, ?)	
 			`, user, 0)
 
 			newUser.Scan(&userRow.user, &userRow.requests)
@@ -80,19 +84,49 @@ INSERT INTO reqLimits(username, requests) VALUES ?, ?
 
 func SetUserRequests(user string, numReqs int, db *sql.DB) {
 	_, err := db.Query(`
-INSERT INTO reqLimits(username, requests) VALUES ?, ?	
+INSERT INTO reqLimits(username, requests) VALUES (?, ?)
 	`, user, numReqs)
 	utils.PanicOnError(err)
 }
 
 func ClearRequestLimits(db *sql.DB) {
 	_, err := db.Query(`
-DELETE * FROM reqLimits 
+DELETE FROM reqLimits 
 	`)
 	utils.PanicOnError(err)
 }
 
-func ToggleQueue(status bool, db *sql.DB) {
+func SetQueueStatus(status bool, db *sql.DB) {
 	// order queueStatus by timestamp
+	queueStatus := QueueStatus{timestamp: 0, status: false}
+
+	// get first row
+	err := db.QueryRow(`
+SELECT timestamp, status FROM queueStatus ORDER BY timestamp DESC LIMIT 1
+	`).Scan(&queueStatus.timestamp, &queueStatus.status)
+	// something is wrong if there are no rows
+	utils.PanicOnError(err)
+
 	// set newest timestamp's status to status
+	queueStatus.status = status
+
+	// insert it back
+	_, err = db.Query(`
+UPDATE queueStatus SET status=? WHERE timestamp=?	
+	`, queueStatus.status, queueStatus.timestamp)
+	utils.PanicOnError(err)
+}
+
+func GetQueueStatus(db *sql.DB) bool {
+	queueStatus := QueueStatus{timestamp: 0, status: false}
+
+	// get first row
+	err := db.QueryRow(`
+SELECT timestamp, status FROM queueStatus ORDER BY timestamp DESC
+	`).Scan(&queueStatus.timestamp, &queueStatus.status)
+	// something is wrong if there are no rows
+	utils.PanicOnError(err)
+
+	// return the status
+	return queueStatus.status
 }
