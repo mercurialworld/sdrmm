@@ -207,7 +207,7 @@ func RunCommands(command string, args map[string]string, db *sql.DB) {
 
 		// grab last request
 		positions := drm.WhereDRM(user)
-		lastRequest := queue[len(positions)-1]
+		lastRequest := queue[positions[len(positions)-1]]
 
 		// clear the queue
 		drm.RequestDRM("queue", "clear")
