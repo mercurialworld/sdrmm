@@ -5,16 +5,10 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"rustlang.pocha.moe/sdrmm/config"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
 )
-
-type NoteLimits struct {
-	minNJS float64
-	maxNJS float64
-	minNPS float64
-	maxNPS float64
-}
 
 func isBanned(bsr string, db *sql.DB) bool {
 	return database.FindBannedMap(bsr, db)
@@ -45,7 +39,7 @@ func userRequestedTooMuch(requestLimit int, userNumRequests int, db *sql.DB) boo
 	return userNumRequests == requestLimit
 }
 
-func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, bool) {
+func checkNJSandNPS(diffs []drm.MapDifficultyData, limits config.NoteLimits) (bool, bool) {
 	// doing NPS and NJS checks in one loop, screw it
 	var passedNJSCheck = false
 	var passedNPSCheck = false
@@ -54,11 +48,11 @@ func checkNJSandNPS(diffs []drm.MapDifficultyData, limits NoteLimits) (bool, boo
 		njs := diff.NoteJumpSpeed
 		nps := diff.NotesPerSecond
 
-		if limits.maxNJS == 0 || limits.minNJS <= njs && njs <= limits.maxNJS {
+		if limits.MaxNJS == 0 || limits.MinNJS <= njs && njs <= limits.MaxNJS {
 			passedNJSCheck = true
 		}
 
-		if limits.maxNPS == 0 || limits.minNPS <= nps && nps <= limits.maxNPS {
+		if limits.MaxNPS == 0 || limits.MinNPS <= nps && nps <= limits.MaxNPS {
 			passedNPSCheck = true
 		}
 	}
@@ -70,22 +64,11 @@ func isClosed(db *sql.DB) bool {
 	return !database.GetQueueStatus(db)
 }
 
-func FilterMap(mapData drm.MapData, username string, numRequests int, modadd bool, db *sql.DB) (drm.MapData, error) {
+func FilterMap(mapData drm.MapData, username string, numRequests int, modadd bool, config config.BSRConfig, db *sql.DB) (drm.MapData, error) {
 	if modadd {
 		return mapData, nil
 	}
-
-	// grabbing config vars
-	minLength := viper.GetInt("min-length")
-	maxLength := viper.GetInt("max-length")
 	duration := mapData.Duration
-	noteLimits := NoteLimits{
-		minNJS: viper.GetFloat64("njs.min"),
-		maxNJS: viper.GetFloat64("njs.max"),
-		minNPS: viper.GetFloat64("nps.min"),
-		maxNPS: viper.GetFloat64("nps.max"),
-	}
-	requestLimit := viper.GetInt("bsr.request-limit")
 
 	// is the queue closed?
 	if isClosed(db) {
@@ -109,28 +92,28 @@ func FilterMap(mapData drm.MapData, username string, numRequests int, modadd boo
 		return mapData, &NewMapError{date: mapData.UploadTime}
 	}
 	// is the map too short?
-	if minLength != 0 && isShorter(duration, minLength) {
+	if config.MinLength != 0 && isShorter(duration, config.MinLength) {
 		return mapData, &MapTooShortError{len: duration}
 	}
 
 	// is the map too long?
-	if maxLength != 0 && isLonger(duration, maxLength) {
+	if config.MaxLength != 0 && isLonger(duration, config.MaxLength) {
 		return mapData, &MapTooLongError{len: duration}
 	}
 
 	// NJS and NPS checks
-	passedNJSCheck, passedNPSCheck := checkNJSandNPS(mapData.Diffs, noteLimits)
+	passedNJSCheck, passedNPSCheck := checkNJSandNPS(mapData.Diffs, config.NoteLimits)
 
 	if !passedNJSCheck {
-		return mapData, &NotInNJSRangeError{minNJS: noteLimits.minNJS, maxNJS: noteLimits.maxNJS}
+		return mapData, &NotInNJSRangeError{minNJS: config.NoteLimits.MinNJS, maxNJS: config.NoteLimits.MaxNJS}
 	}
 
 	if !passedNPSCheck {
-		return mapData, &NotInNPSRangeError{minNPS: noteLimits.minNPS, maxNPS: noteLimits.maxNPS}
+		return mapData, &NotInNPSRangeError{minNPS: config.NoteLimits.MinNPS, maxNPS: config.NoteLimits.MinNPS}
 	}
 
 	// did the user request enough maps this stream?
-	if requestLimit != 0 && userRequestedTooMuch(requestLimit, numRequests, db) {
+	if config.RequestLimit != 0 && userRequestedTooMuch(config.RequestLimit, numRequests, db) {
 		return mapData, &UserMaxRequestsError{user: username}
 	}
 

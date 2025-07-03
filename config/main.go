@@ -40,3 +40,22 @@ func ReadConfig() {
 		}
 	}
 }
+
+func GetConfig() BSRConfig {
+	minLength := viper.GetInt("min-length")
+	maxLength := viper.GetInt("max-length")
+	noteLimits := NoteLimits{
+		MinNJS: viper.GetFloat64("njs.min"),
+		MaxNJS: viper.GetFloat64("njs.max"),
+		MinNPS: viper.GetFloat64("nps.min"),
+		MaxNPS: viper.GetFloat64("nps.max"),
+	}
+	requestLimit := viper.GetInt("bsr.request-limit")
+
+	return BSRConfig{
+		MinLength:    minLength,
+		MaxLength:    maxLength,
+		NoteLimits:   noteLimits,
+		RequestLimit: requestLimit,
+	}
+}

@@ -9,13 +9,14 @@ import (
 
 func main() {
 	config.ReadConfig()
+	config := config.GetConfig()
 
 	db := database.InitializeDB()
 
 	cmd, args, err := parser.Parse() // returns json
 	utils.PanicOnError(err)
 
-	RunCommands(cmd, args, db)
+	RunCommands(cmd, args, config, db)
 
 	database.CloseDB(db)
 }

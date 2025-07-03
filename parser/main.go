@@ -43,7 +43,7 @@ func Parse() (string, map[string]string, error) {
 		} else {
 			var extraArgs map[string]string = nil
 
-			if !args.Queue.FromCommand {
+			if args.Queue.FromDRM {
 				extraArgs = map[string]string{"status": strconv.FormatBool(args.Queue.SetStatus)}
 			}
 

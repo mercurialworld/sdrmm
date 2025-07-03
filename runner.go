@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"rustlang.pocha.moe/sdrmm/config"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
 )
@@ -26,7 +27,7 @@ func queryMaps(res []byte) []drm.MapData {
 	return resQueue
 }
 
-func RunCommands(command string, args map[string]string, db *sql.DB) {
+func RunCommands(command string, args map[string]string, config config.BSRConfig, db *sql.DB) {
 	switch command {
 	case "new":
 		// clear queue
@@ -61,7 +62,7 @@ func RunCommands(command string, args map[string]string, db *sql.DB) {
 		userNumRequests := database.GetUserRequests(user, db)
 
 		// put map through filters
-		mapToQueue, err := FilterMap(mapToQueue, user, userNumRequests, modadd, db)
+		mapToQueue, err := FilterMap(mapToQueue, user, userNumRequests, modadd, config, db)
 
 		if err != nil {
 			// print a message
@@ -186,16 +187,19 @@ func RunCommands(command string, args map[string]string, db *sql.DB) {
 			newQueueStatus, _ = strconv.ParseBool(args["status"])
 		}
 
-		// set the queue to whatever we get
+		// set the queue to whatever we get in database
 		database.SetQueueStatus(newQueueStatus, db)
 
-		// format/print string
-		statusString := "closed"
+		// set it in DRM too
+		drm.RequestDRM("queue", "open/"+strconv.FormatBool(newQueueStatus))
 
+		// format string
+		statusString := "closed"
 		if newQueueStatus {
 			statusString = "open"
 		}
 
+		// print string
 		fmt.Printf("The queue is now %s.", statusString)
 
 	case "oops":
