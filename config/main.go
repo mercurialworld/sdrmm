@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 	"rustlang.pocha.moe/sdrmm/utils"
 )
@@ -51,11 +53,18 @@ func GetConfig() BSRConfig {
 		MaxNPS: viper.GetFloat64("nps.max"),
 	}
 	requestLimit := viper.GetInt("bsr.request-limit")
+	newerThan, err := time.Parse("2006-01-02", viper.GetString("bsr.newer-than"))
+	if err != nil {
+		newerThan, _ = time.Parse("2006-01-02", "2000-01-01")
+	}
+	mapAge := viper.GetInt("bsr.map-age")
 
 	return BSRConfig{
 		MinLength:    minLength,
 		MaxLength:    maxLength,
 		NoteLimits:   noteLimits,
 		RequestLimit: requestLimit,
+		NewerThan:    newerThan,
+		MapAge:       mapAge,
 	}
 }

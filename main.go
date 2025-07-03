@@ -13,7 +13,7 @@ func main() {
 
 	db := database.InitializeDB()
 
-	cmd, args, err := parser.Parse() // returns json
+	cmd, args, err := parser.Parse()
 	utils.PanicOnError(err)
 
 	RunCommands(cmd, args, config, db)

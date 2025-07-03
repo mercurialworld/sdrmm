@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/spf13/viper"
 	"rustlang.pocha.moe/sdrmm/config"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
@@ -14,17 +13,12 @@ func isBanned(bsr string, db *sql.DB) bool {
 	return database.FindBannedMap(bsr, db)
 }
 
-func isOlder(mapDate time.Time) bool {
-	olderThan, err := time.Parse("2006-01-02", viper.GetString("bsr.newer-than"))
-	if err != nil {
-		olderThan, _ = time.Parse("2006-01-02", "2000-01-01")
-	}
-
-	return mapDate.Before(olderThan)
+func isOlder(mapDate time.Time, minDate time.Time) bool {
+	return mapDate.Before(minDate)
 }
 
-func isNewer(mapDate time.Time) bool {
-	return time.Since(mapDate).Hours()/24 < float64(viper.GetInt("bsr.map-age"))
+func isNewer(mapDate time.Time, mapAge int) bool {
+	return time.Since(mapDate).Hours()/24 < float64(mapAge)
 }
 
 func isShorter(mapLength int, minLength int) bool {
@@ -35,7 +29,7 @@ func isLonger(mapLength int, maxLength int) bool {
 	return mapLength > maxLength
 }
 
-func userRequestedTooMuch(requestLimit int, userNumRequests int, db *sql.DB) bool {
+func userRequestedTooMuch(requestLimit, userNumRequests int) bool {
 	return userNumRequests == requestLimit
 }
 
@@ -83,12 +77,12 @@ func FilterMap(mapData drm.MapData, username string, numRequests int, modadd boo
 	uploadTime := mapData.UploadTime.Local().UTC()
 
 	// is the map older than a certain date?
-	if isOlder(uploadTime) {
+	if isOlder(uploadTime, config.NewerThan) {
 		return mapData, &OlderThanOldestDateError{date: mapData.UploadTime}
 	}
 
 	// has the map released bsr.map-age days ago?
-	if isNewer(uploadTime) {
+	if isNewer(uploadTime, config.MapAge) {
 		return mapData, &NewMapError{date: mapData.UploadTime}
 	}
 	// is the map too short?
@@ -113,7 +107,7 @@ func FilterMap(mapData drm.MapData, username string, numRequests int, modadd boo
 	}
 
 	// did the user request enough maps this stream?
-	if config.RequestLimit != 0 && userRequestedTooMuch(config.RequestLimit, numRequests, db) {
+	if config.RequestLimit != 0 && userRequestedTooMuch(config.RequestLimit, numRequests) {
 		return mapData, &UserMaxRequestsError{user: username}
 	}
 
