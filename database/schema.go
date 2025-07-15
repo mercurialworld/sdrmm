@@ -5,9 +5,10 @@ type Banned struct {
 	hash string
 }
 
-type ReqLimits struct {
-	user     string
-	requests int // incremental
+type UserRequests struct {
+	user               string
+	successfulRequests int // incremental
+	requestsInQueue    int
 }
 
 type QueueStatus struct {

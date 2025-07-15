@@ -1,17 +1,20 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/spf13/viper"
 	"rustlang.pocha.moe/sdrmm/config"
 	"rustlang.pocha.moe/sdrmm/database"
 	"rustlang.pocha.moe/sdrmm/drm"
 )
+
+type Runner struct {
+	config   config.BSRConfig
+	database database.DRMDatabase
+}
 
 func queryMap(res []byte) drm.MapData {
 	var resultMap drm.MapData
@@ -27,14 +30,42 @@ func queryMaps(res []byte) []drm.MapData {
 	return resQueue
 }
 
-func RunCommands(command string, args map[string]string, config config.BSRConfig, db *sql.DB) {
+func (r Runner) refundRequest(user string, messageBuilder string) string {
+	// grab number of user requests
+	userNumRequests := r.database.GetUserRequests(user)
+	// grab number of requests *in queue*
+	userNumRequestsInQueue := r.database.GetUserRequestsInQueue(user)
+
+	// grab the request limit
+	requestLimit := r.config.RequestLimit
+	// grab the limit of maps in queue
+	queueRequestLimit := r.config.QueueRequestLimit
+
+	if requestLimit > 0 {
+		userNumRequests--
+		r.database.SetUserRequests(user, userNumRequests)
+
+		messageBuilder += fmt.Sprintf(" You have %d requests left.", requestLimit-userNumRequests)
+	}
+
+	if queueRequestLimit > 0 {
+		userNumRequestsInQueue--
+		r.database.SetUserRequestsInQueue(user, userNumRequestsInQueue)
+	}
+
+	return messageBuilder
+}
+
+func (r Runner) RunCommands(command string, args map[string]string) {
+	filter := Filterer(r)
+
 	switch command {
 	case "new":
 		// clear queue
 		drm.RequestDRM("clear", "")
 
 		// clear requests
-		database.ClearRequestLimits(db)
+		r.database.ClearRequestLimits()
 
 		// close queue
 		drm.RequestDRM("queue", "open/false")
@@ -43,7 +74,7 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 		currentTime := time.Now()
 
 		// add new entry in db
-		database.NewSession(currentTime, db)
+		r.database.NewSession(currentTime)
 
 		// print confirmation message
 		fmt.Printf("New session created! Queue has been cleared and closed.")
@@ -59,10 +90,17 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 		modadd, _ := strconv.ParseBool(args["modadd"])
 
 		// grab number of user requests
-		userNumRequests := database.GetUserRequests(user, db)
+		userNumRequests := r.database.GetUserRequests(user)
+		// grab number of requests *in queue*
+		userNumRequestsInQueue := r.database.GetUserRequestsInQueue(user)
+
+		// grab the request limit
+		requestLimit := r.config.RequestLimit
+		// grab the limit of maps in queue
+		queueRequestLimit := r.config.QueueRequestLimit
 
 		// put map through filters
-		mapToQueue, err := FilterMap(mapToQueue, user, userNumRequests, modadd, config, db)
+		mapToQueue, err := filter.FilterMap(mapToQueue, user, modadd)
 
 		if err != nil {
 			// print a message
@@ -70,19 +108,22 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 		} else {
 			// add to queue
 			addKeyArgs := mapToQueue.BsrKey + "?user=" + user
-			drm.RequestDRM("addKey", addKeyArgs)
-
-			// ...grab the request limit
-			requestLimit := viper.GetInt("bsr.request-limit")
+			drm.RequestDRM("addKey", "/"+addKeyArgs)
 
 			message := "Added to queue!"
 
 			if requestLimit > 0 {
 				// increment user requests
 				userNumRequests++
-				database.SetUserRequests(user, userNumRequests, db)
+				r.database.SetUserRequests(user, userNumRequests)
 
 				message += fmt.Sprintf(" You have %d requests left.", requestLimit-userNumRequests)
+			}
+
+			if queueRequestLimit > 0 {
+				// increment requests in queue
+				userNumRequestsInQueue++
+				r.database.SetUserRequestsInQueue(user, userNumRequestsInQueue)
 			}
 
 			// and then, print the message
@@ -97,7 +138,7 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 		pos := fmt.Sprintf("%d", positions[len(positions)-1])
 
 		// move the request to top
-		drm.RequestDRM("queue", "move/"+pos+"/1")
+		drm.RequestDRM("queue", "/move/"+pos+"/1")
 
 		// print confirmation message
 		fmt.Printf("Moved request to the top of the queue.")
@@ -150,27 +191,34 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 
 	case "ban":
 		// query map
-		mapToBan := queryMap(drm.RequestDRM("query", args["id"]))
+		mapToBan := queryMap(drm.RequestDRM("query", "/"+args["id"]))
 
 		// ban map
-		database.BanMap(mapToBan.BsrKey, mapToBan.Hash, db)
+		r.database.BanMap(mapToBan.BsrKey, mapToBan.Hash)
+
+		message := fmt.Sprintf("%s is now banned from being requested.", mapToBan.BsrKey)
+
+		// if a user requested it, refund their requests
+		if user, found := args["username"]; found {
+			message = r.refundRequest(user, message)
+		}
 
 		// print message
-		fmt.Printf("%s is now banned from being requested.", mapToBan.BsrKey)
+		fmt.Print(message)
 
 	case "unban":
 		// query map
-		mapToUnban := queryMap(drm.RequestDRM("query", args["id"]))
+		mapToUnban := queryMap(drm.RequestDRM("query", "/"+args["id"]))
 
 		// unban map
-		database.BanMap(mapToUnban.BsrKey, mapToUnban.Hash, db)
+		r.database.BanMap(mapToUnban.BsrKey, mapToUnban.Hash)
 
 		// print message
 		fmt.Printf("%s can now be requested again.", mapToUnban.BsrKey)
 
 	case "queuestatus":
 		// get queue status
-		queueStatus := database.GetQueueStatus(db)
+		queueStatus := r.database.GetQueueStatus()
 
 		statusString := "closed"
 
@@ -182,15 +230,15 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 
 	case "togglequeue":
 		// get queue status
-		newQueueStatus := !database.GetQueueStatus(db)
+		newQueueStatus := !r.database.GetQueueStatus()
 		if args != nil {
 			newQueueStatus, _ = strconv.ParseBool(args["status"])
 		}
 
-		// set the queue to whatever we get in database
-		database.SetQueueStatus(newQueueStatus, db)
+		// set the queue status to whatever we get in the database
+		r.database.SetQueueStatus(newQueueStatus)
 
-		// set it in DRM too
+		// set it in game too
 		drm.RequestDRM("queue", "open/"+strconv.FormatBool(newQueueStatus))
 
 		// format string
@@ -219,12 +267,23 @@ func RunCommands(command string, args map[string]string, config config.BSRConfig
 		// re-request map if it isn't lastRequest
 		for _, mapData := range queue {
 			if !(mapData.BsrKey == lastRequest.BsrKey && mapData.User == lastRequest.User) {
-				drm.RequestDRM("addKey", mapData.BsrKey+"?user="+mapData.User)
+				drm.RequestDRM("addKey", "/"+mapData.BsrKey+"?user="+mapData.User)
 			}
 		}
 
 		// print message
 		fmt.Printf("Request %s removed from queue.", lastRequest.BsrKey)
+	case "refund":
+		user := args["username"]
+		message := "Request skipped."
+
+		message = r.refundRequest(user, message)
+
+		fmt.Print(message)
+	case "link":
+		res := queryMap(drm.RequestDRM("history", "?limit=1"))
+
+		fmt.Printf("%s - %s [%s]: https://beatsaver.com/maps/%s", res.Artist, res.Title, res.Mapper, res.BsrKey)
 
 	}
 }

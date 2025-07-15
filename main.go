@@ -11,12 +11,14 @@ func main() {
 	config.ReadConfig()
 	config := config.GetConfig()
 
-	db := database.InitializeDB()
+	db := database.DRMDatabase{DB: database.InitializeDB()}
+
+	runner := Runner{config: config, database: db}
 
 	cmd, args, err := parser.Parse()
 	utils.PanicOnError(err)
 
-	RunCommands(cmd, args, config, db)
+	runner.RunCommands(cmd, args)
 
-	database.CloseDB(db)
+	db.CloseDB()
 }

@@ -18,14 +18,15 @@ type WipCmd struct {
 	User string `arg:"-u,required" help:"The username of the requester"`
 }
 
-// Get the queue
+// Get the user's requests in queue
 type GetQueueCmd struct {
 	User string `arg:"positional" help:"The username who invoked the command"`
 }
 
 // Blacklist/ban a map
 type BanCmd struct {
-	Id string `arg:"positional,required" help:"The BeatSaver ID of the map to be banned"`
+	Id   string `arg:"positional,required" help:"The BeatSaver ID of the map to be banned"`
+	User string `help:"The user to refund, if any"`
 }
 
 // Whitelist/unban a map
@@ -33,12 +34,23 @@ type UnbanCmd struct {
 	Id string `arg:"positional,required" help:"The BeatSaver ID of the map to be unbanned"`
 }
 
-// Get status of queue
+// Queue related commands
 type QueueCmd struct {
-	Status    bool `arg:"-s" help:"Get queue status"`
-	FromDRM   bool `default:"false" help:"Whether this command is invoked from the websocket/webhook or not."`
-	SetStatus bool `help:"Set queue status"`
+	Get    *GetQueueStatusCmd    `arg:"subcommand:get" help:"Gets the status of queue"`
+	Set    *SetQueueStatusCmd    `arg:"subcommand:set" help:"Sets the queue status"`
+	Toggle *ToggleQueueStatusCmd `arg:"subcommand:toggle" help:"Toggles queue status"`
 }
+
+// Get queue status
+type GetQueueStatusCmd struct{}
+
+// Set queue status
+type SetQueueStatusCmd struct {
+	Open bool `arg:"positional,required" help:"Should the queue be open?"`
+}
+
+// Toggle queue status
+type ToggleQueueStatusCmd struct{}
 
 // Clear queue
 type ClearCmd struct {
@@ -52,3 +64,11 @@ type OopsCmd struct {
 
 // New session
 type NewSessionCmd struct{}
+
+// !link
+type LinkCmd struct{}
+
+// refund
+type RefundCmd struct {
+	User string `help:"The user to refund."`
+}

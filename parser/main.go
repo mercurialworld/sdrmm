@@ -20,6 +20,8 @@ func Parse() (string, map[string]string, error) {
 		Unban    *UnbanCmd      `arg:"subcommand:unban" help:"Unban a map from being requested"`
 		Oops     *OopsCmd       `arg:"subcommand:oops" help:"Undo a user's recent request"`
 		New      *NewSessionCmd `arg:"subcommand:new" help:"Start a new session"`
+		Link     *LinkCmd       `arg:"subcommand:link" help:"Get the link to the last/currently played song"`
+		Refund   *RefundCmd     `arg:"subcommand:refund" help:"Refund a user"`
 	}
 
 	arg.MustParse(&args)
@@ -38,13 +40,13 @@ func Parse() (string, map[string]string, error) {
 		return "getqueue", map[string]string{"username": args.GetQueue.User}, nil
 
 	case args.Queue != nil:
-		if args.Queue.Status {
+		if args.Queue.Get != nil {
 			return "queuestatus", nil, nil
 		} else {
 			var extraArgs map[string]string = nil
 
-			if args.Queue.FromDRM {
-				extraArgs = map[string]string{"status": strconv.FormatBool(args.Queue.SetStatus)}
+			if args.Queue.Set != nil {
+				extraArgs = map[string]string{"status": strconv.FormatBool(args.Queue.Set.Open)}
 			}
 
 			return "togglequeue", extraArgs, nil
@@ -54,7 +56,13 @@ func Parse() (string, map[string]string, error) {
 		return "clear", map[string]string{"save": strconv.FormatBool(args.Clear.SaveQueue)}, nil
 
 	case args.Ban != nil:
-		return "ban", map[string]string{"id": args.Ban.Id}, nil
+		banArgs := map[string]string{"id": args.Ban.Id}
+
+		if args.Ban.User != "" {
+			banArgs["username"] = args.Ban.User
+		}
+
+		return "ban", banArgs, nil
 
 	case args.Unban != nil:
 		return "unban", map[string]string{"id": args.Unban.Id}, nil
@@ -64,6 +72,12 @@ func Parse() (string, map[string]string, error) {
 
 	case args.New != nil:
 		return "new", nil, nil
+
+	case args.Refund != nil:
+		return "refund", map[string]string{"username": args.Refund.User}, nil
+
+	case args.Link != nil:
+		return "link", nil, nil
 	}
 
 	return "", nil, fmt.Errorf("unable to parse arguments: %s", os.Args)

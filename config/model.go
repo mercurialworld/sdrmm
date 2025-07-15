@@ -10,10 +10,11 @@ type NoteLimits struct {
 }
 
 type BSRConfig struct {
-	MinLength    int
-	MaxLength    int
-	RequestLimit int
-	NewerThan    time.Time
-	MapAge       int
-	NoteLimits   NoteLimits
+	MinLength         int
+	MaxLength         int
+	RequestLimit      int
+	QueueRequestLimit int
+	NewerThan         time.Time
+	MapAge            int
+	NoteLimits        NoteLimits
 }

@@ -13,7 +13,7 @@ func RequestDRM(endpoint string, arguments string) []byte {
 	drmURL := viper.GetString("drm.url")
 	drmPort := viper.GetString("drm.port")
 
-	requestURL := drmURL + ":" + drmPort + "/" + endpoint + "/" + arguments
+	requestURL := drmURL + ":" + drmPort + "/" + endpoint + arguments
 
 	// fmt.Println(requestURL)
 
@@ -27,7 +27,7 @@ func RequestDRM(endpoint string, arguments string) []byte {
 }
 
 func WhereDRM(user string) []int {
-	resBody := RequestDRM("queue", "where/"+user)
+	resBody := RequestDRM("queue", "/where/"+user)
 
 	var resQueueData []QueuePositionData
 
