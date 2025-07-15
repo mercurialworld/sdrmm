@@ -20,7 +20,6 @@ func Parse() (string, map[string]string, error) {
 		Unban    *UnbanCmd      `arg:"subcommand:unban" help:"Unban a map from being requested"`
 		Oops     *OopsCmd       `arg:"subcommand:oops" help:"Undo a user's recent request"`
 		New      *NewSessionCmd `arg:"subcommand:new" help:"Start a new session"`
-		Link     *LinkCmd       `arg:"subcommand:link" help:"Get the link to the last/currently played song"`
 		Refund   *RefundCmd     `arg:"subcommand:refund" help:"Refund a user"`
 	}
 
@@ -75,9 +74,6 @@ func Parse() (string, map[string]string, error) {
 
 	case args.Refund != nil:
 		return "refund", map[string]string{"username": args.Refund.User}, nil
-
-	case args.Link != nil:
-		return "link", nil, nil
 	}
 
 	return "", nil, fmt.Errorf("unable to parse arguments: %s", os.Args)

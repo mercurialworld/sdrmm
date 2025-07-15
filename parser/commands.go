@@ -65,9 +65,6 @@ type OopsCmd struct {
 // New session
 type NewSessionCmd struct{}
 
-// !link
-type LinkCmd struct{}
-
 // refund
 type RefundCmd struct {
 	User string `help:"The user to refund."`
