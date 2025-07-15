@@ -280,10 +280,5 @@ func (r Runner) RunCommands(command string, args map[string]string) {
 		message = r.refundRequest(user, message)
 
 		fmt.Print(message)
-	case "link":
-		res := queryMaps(drm.RequestDRM("history", "?limit=1"))[0]
-
-		fmt.Printf("%s - %s [%s]: https://beatsaver.com/maps/%s", res.Artist, res.Title, res.Mapper, res.BsrKey)
-
 	}
 }

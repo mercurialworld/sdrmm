@@ -19,7 +19,8 @@ url = "http://localhost"
 port = 13337
 
 [bsr]
-request-limit = 0               # set this to 0 to allow unlimited requests
+req-limit = 0                   # set this to 0 to allow unlimited requests
+queue-req-limit = 0             # set this to 0 to allow unlimited requests in queue
 newer-than = 2018-05-08         # ISO 8601 formatted date
 map-age = 0                     # how many days old the map should be
 min-length = 0                  # min length of the song, in seconds
