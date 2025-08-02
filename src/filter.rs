@@ -36,7 +36,7 @@ pub async fn filter_map(
     // modadd
     if let Some(m) = modadd {
         if m {
-            return Err(format!("Added {} to queue.", map.bsr_key));
+            return Ok(());
         }
     }
 
