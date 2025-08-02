@@ -90,7 +90,9 @@ pub async fn filter_map(
     }
 
     // is map younger than a certain number of days?
-    if let Some(new_map) = Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64)) {
+    if !ignore_config(config.bsr.date.min_age) &&
+        let Some(new_map) = Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64)) 
+    {
         return Err(format!(
             "Map is less than {} years old (uploaded {})",
             config.bsr.date.min_age,
