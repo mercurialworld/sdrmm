@@ -1,41 +1,68 @@
 use clap::{Parser, Subcommand, command};
 
 #[derive(Debug, Parser)]
-struct SDRMM {
+pub struct SDRMM {
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 }
 
 #[derive(Debug, Subcommand)]
-enum Commands {
+pub enum Commands {
+    /// Clears session request tracker, clears queue, and closes queue
     New,
+    /// Sends a request to DRM's addKey endpoint after going through map filters
     #[command(arg_required_else_help = true)]
     Request {
+        /// The 4-5 digit code of the map on BeatSaver
         id: String,
+        /// The user who requested the map
         user: String,
+        /// The service the user chatted from.
+        #[arg(short, long)]
         service: Option<String>,
-        modadd: bool,
+        /// Whether a mod added this map or not
+        #[arg(long)]
+        modadd: Option<bool>,
     },
+    /// Sends a request to DRM's addWIP endpoint
     #[command(arg_required_else_help = true)]
     Wip {
+        /// A link to the WIP file, or the code from wipbot.com
         wip: String,
+        /// The user who requested the WIP
         user: String,
     },
+    /// Shows/changes the status of the queue
     #[command(arg_required_else_help = true)]
     Queue {
+        /// The subcommand
         command: String,
     },
+    /// Gets length of the queue, and optionally where the user's requests are in it
+    #[command(arg_required_else_help = true, name = "getqueue")]
+    GetQueue {
+        /// The user who invoked the command
+        #[arg(short, long)]
+        user: String,
+    },
+    /// Clears queue
     Clear,
+    /// Moves a user's most recent request to the top of the queue
     #[command(arg_required_else_help = true)]
     Top {
+        /// The user who invoked the command
         user: String,
     },
+    /// Undoes the user's most recent request
     #[command(arg_required_else_help = true)]
     Oops {
+        /// The user who invoked the command
         user: String,
     },
+    /// Refunds a request if it's skipped or banned, if you have session_max set
     #[command(arg_required_else_help = true)]
     Refund {
+        /// The user whose request was refunded
         user: String,
     },
 }

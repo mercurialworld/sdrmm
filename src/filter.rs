@@ -1,4 +1,4 @@
-use chrono::{DateTime, Days, TimeDelta, Utc};
+use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
 use num::Num;
 
 use crate::{
@@ -35,9 +35,7 @@ pub async fn filter_map(
 ) -> Result<(), String> {
     // modadd
     if let Some(m) = modadd {
-        if m {
-            return Err(format!("Added {} to queue.", map.bsr_key));
-        }
+        if m { return Ok(()) }
     }
 
     // is queue closed?
@@ -51,15 +49,14 @@ pub async fn filter_map(
     }
 
     // does the user already have enough stuff in queue?
-    if let Ok(in_queue) = drm.queue_where(&user).await 
-        && ignore_or_equate(config.queue.queue_max, in_queue.len() as i32) 
+    if let Ok(in_queue) = drm.queue_where(&user).await
+        && ignore_or_equate(config.queue.queue_max, in_queue.len() as i32)
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
             config.queue.queue_max
         ));
     }
-    
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
@@ -78,7 +75,15 @@ pub async fn filter_map(
     }
 
     // is map older than a certain date?
-    match is_older(map.upload_time, config.bsr.date.earliest) {
+    match is_older(
+        map.upload_time,
+        config
+            .bsr
+            .date
+            .earliest
+            .and_time(NaiveTime::default())
+            .and_utc(),
+    ) {
         true => (),
         false => {
             return Err(format!(
@@ -90,8 +95,9 @@ pub async fn filter_map(
     }
 
     // is map younger than a certain number of days?
-    if !ignore_config(config.bsr.date.min_age) &&
-        let Some(new_map) = Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64)) 
+    if !ignore_config(config.bsr.date.min_age)
+        && let Some(new_map) =
+            Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64))
     {
         return Err(format!(
             "Map is less than {} years old (uploaded {})",
@@ -101,8 +107,7 @@ pub async fn filter_map(
     }
 
     // is the map too short?
-    if ignore_or_compare(config.bsr.length.min, map.duration, config.bsr.length.max)
-    {
+    if ignore_or_compare(config.bsr.length.min, map.duration, config.bsr.length.max) {
         return Err(format!(
             "Map is shorter than {} seconds (is {} seconds)",
             config.bsr.length.min, map.duration
@@ -110,8 +115,7 @@ pub async fn filter_map(
     }
 
     // is the map too long?
-    if ignore_or_compare(config.bsr.length.max, config.bsr.length.max, map.duration)
-    {
+    if ignore_or_compare(config.bsr.length.max, config.bsr.length.max, map.duration) {
         return Err(format!(
             "Map is longer than {} seconds (is {} seconds)",
             config.bsr.length.max, map.duration

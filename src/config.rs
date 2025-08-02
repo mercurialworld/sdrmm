@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use config::{Config, ConfigError, File, builder};
 use num::{Num, zero};
 use serde::Deserialize;
@@ -18,7 +18,7 @@ pub struct QueueConfig {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct BSRDateConfig {
-    pub earliest: DateTime<Utc>,
+    pub earliest: NaiveDate,
     pub min_age: i32,
 }
 
