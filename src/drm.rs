@@ -58,7 +58,7 @@ impl DRM {
     }
 
     // the entire queue
-    pub async fn queue(&self) -> DRMResult<DRMMap> {
+    pub async fn queue(&self) -> DRMResult<Vec<DRMMap>> {
         self.get_endpoint("queue").await
     }
 

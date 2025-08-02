@@ -3,7 +3,7 @@ use config::{Config, ConfigError, File, builder};
 use num::{Num, zero};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct DRMConfig {
     pub url: String,
     pub port: i32,

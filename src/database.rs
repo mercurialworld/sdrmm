@@ -59,14 +59,14 @@ impl Database {
     pub fn get_queue_status(&self) -> DBResult<bool> {
         let mut query = self.conn.prepare(
             "
-            SELECT timestamp, status 
+            SELECT timestamp, open
             FROM QueueStatus 
             ORDER BY timestamp DESC 
             LIMIT 1
             ",
         )?;
 
-        let mut results = query.query_map([], |row| {
+        let mut result = query.query_map([], |row| {
             Ok(QueueStatus {
                 timestamp: row.get(0)?,
                 open: row.get(1)?,
@@ -74,16 +74,22 @@ impl Database {
         });
 
         // [FIXME] surely there's something better
-        Ok(results.unwrap().next().unwrap().unwrap().open)
+        Ok(result.unwrap().next().unwrap().unwrap().open)
     }
 
-    pub fn set_queue_status(&self, timestamp: DateTime<Utc>, open: bool) -> DBResult<()> {
+    pub fn set_queue_status(&self, open: bool) -> DBResult<()> {
         self.conn.execute(
             "
+            WITH CurrentSession AS (
+                SELECT timestamp, open 
+                FROM QueueStatus 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+            )
             UPDATE QueueStatus 
-            SET status=?1 
-            WHERE timestamp=?2",
-            (&open, &timestamp.timestamp()),
+            SET open=?1 
+            WHERE timestamp=CurrentSession.timestamp",
+            (&open,),
         );
 
         Ok(())

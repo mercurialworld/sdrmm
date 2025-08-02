@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, serde::ts_seconds};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -40,18 +40,20 @@ pub struct DRMMap {
     pub mapper: String,
     pub censor_mapper: bool,
     #[serde(rename = "MetaDataHasSplicedCensor")]
-    pub metadata_has_spliced_censor: bool,
+    pub metadata_has_spliced_censor: Option<bool>,
     pub duration: i32,
     pub votes: Vec<i32>,
     pub rating: f32,
-    pub upload_time: DateTime<Utc>,  // unix epoch
+    #[serde(with = "ts_seconds")]
+    pub upload_time: DateTime<Utc>, // unix epoch
+    #[serde(with = "ts_seconds")]
     pub last_updated: DateTime<Utc>, // unix epoch
     pub cover: String,
     pub automapped: bool,
     #[serde(rename = "ScoreSaberRanked")]
-    pub scoresaber_ranked: f32,
+    pub scoresaber_ranked: bool,
     #[serde(rename = "BeatLeaderRanked")]
-    pub beatleader_ranked: f32,
+    pub beatleader_ranked: bool,
     pub curated: bool,
     pub curator_name: String,
     pub playlists: Vec<String>,
@@ -76,6 +78,7 @@ pub struct DRMQueueItem {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DRMHistoryItem {
+    #[serde(with = "ts_seconds")]
     pub timestamp: DateTime<Utc>, // unix epoch
     pub history_item: DRMMap,
 }

@@ -7,12 +7,12 @@ use crate::{
     drm::{DRM, schema::DRMMap},
 };
 
-fn is_older(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
-    map_date.signed_duration_since(min_date) < TimeDelta::zero()
+fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
+    map_date.signed_duration_since(min_date) > TimeDelta::zero()
 }
 
-fn is_open(db: &Database) -> Result<bool, DatabaseError> {
-    db.get_queue_status()
+fn is_open(db: &Database) -> anyhow::Result<bool> {
+    Ok(db.get_queue_status()?)
 }
 
 // Returns False if everything is fine, or the setting is 0
@@ -22,7 +22,7 @@ fn ignore_or_compare<T: Num + PartialOrd>(to_ignore: T, left: T, right: T) -> bo
 
 // Returns False if everything is fine, or the setting is 0
 fn ignore_or_equate<T: Num + PartialOrd + Clone>(option: T, map_val: T) -> bool {
-    !ignore_config(option.clone()) && option == map_val
+    !ignore_config(option.clone()) && option >= map_val
 }
 
 pub async fn filter_map(
@@ -35,7 +35,9 @@ pub async fn filter_map(
 ) -> Result<(), String> {
     // modadd
     if let Some(m) = modadd {
-        if m { return Ok(()) }
+        if m {
+            return Ok(());
+        }
     }
 
     // is queue closed?
@@ -45,7 +47,13 @@ pub async fn filter_map(
                 return Err("Queue is closed!".into());
             }
         }
-        Err(_) => return Err("Queue is probably closed".into()),
+        Err(e) => {
+            let mut h: String = "".into();
+            e.chain()
+                .skip(1)
+                .for_each(|cause| h.push_str(&format!("{:?}", cause)));
+            return Err(h);
+        }
     }
 
     // does the user already have enough stuff in queue?
@@ -70,12 +78,12 @@ pub async fn filter_map(
 
     // is map banned?
     match map.blacklisted {
-        true => (),
-        false => return Err("Map is banned from being requested!".into()),
+        true => return Err("Map is banned from being requested!".into()),
+        false => (),
     }
 
     // is map older than a certain date?
-    match is_older(
+    match is_recent(
         map.upload_time,
         config
             .bsr
