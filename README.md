@@ -32,7 +32,7 @@ queue:
     replay: true      # Whether to play maps that have already been played this session.
 bsr:
     date:
-        earliest: 1900-01-01   # YYYY-MM-DD format
+        earliest: 1970-01-01   # YYYY-MM-DD format
         min_age: 0             # How old a map is, in days. Useful if you don't want users to request new maps.
     length:
         min: 0                 # Minimum length, in seconds. Set to 0 to ignore.

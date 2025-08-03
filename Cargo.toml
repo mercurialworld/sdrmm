@@ -2,6 +2,7 @@
 name = "sdrmm"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/mercurialworld/sdrmm"
 
 [dependencies]
 anyhow = "1.0.98"
@@ -16,3 +17,8 @@ serde_json = "1.0.142"
 thiserror = "2.0.12"
 tokio = { version = "1.47.1", features = ["macros", "rt", "rt-multi-thread"] }
 url = "2.5.4"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
