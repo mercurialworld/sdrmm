@@ -172,6 +172,15 @@ async fn get_link(drm: &DRM) {
     }
 }
 
+async fn move_to_top(user: &str, drm: &DRM) {
+    todo!()
+}
+
+async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
+    todo!()
+}
+
+
 #[main]
 async fn main() {
     let sdrmm_config = SDRMMConfig::new("config.yaml").unwrap();
@@ -195,9 +204,8 @@ async fn main() {
         commands::Commands::Queue { command } => queue(command, &drm, &db).await,
         commands::Commands::GetQueue { user } => get_queue(Some(user), &drm).await,
         commands::Commands::Clear => clear_queue(&drm, &db).await,
-        commands::Commands::Top { user: _ } => todo!(),
-        commands::Commands::Oops { user: _ } => todo!(),
-        commands::Commands::Refund { user: _ } => todo!(),
+        commands::Commands::Top { user } => move_to_top(&user, &drm).await,
+        commands::Commands::Refund { user } => refund_request(&user, &db, &sdrmm_config).await,
         commands::Commands::Link => get_link(&drm).await,
     }
 }

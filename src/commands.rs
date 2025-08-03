@@ -53,12 +53,6 @@ pub enum Commands {
         /// The user who invoked the command
         user: String,
     },
-    /// Undoes the user's most recent request
-    #[command(arg_required_else_help = true)]
-    Oops {
-        /// The user who invoked the command
-        user: String,
-    },
     /// Refunds a request if it's skipped or banned, if you have session_max set
     #[command(arg_required_else_help = true)]
     Refund {
