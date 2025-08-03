@@ -15,22 +15,34 @@ fn is_open(db: &Database) -> anyhow::Result<bool> {
     Ok(db.get_queue_status()?)
 }
 
-// Returns False if everything is fine, or the setting is 0
+/// Checks if you need to ignore `config_val`. 
+/// If that is false, checks if `to_compare` is greater than `config_val`. 
+/// 
+/// Returns false if `config_val` is 0 or `to_compare` < `config_val`.
 fn gt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
     !ignore_config(config_val.clone()) && to_compare > config_val
 }
 
-// Returns False if everything is fine, or the setting is 0
+/// Checks if you need to ignore `config_val`. 
+/// If that is false, checks if `to_compare` is less than `config_val`. 
+/// 
+/// Returns false if `config_val` is 0 or `to_compare` > `config_val`.
 fn lt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
     !ignore_config(config_val.clone()) && to_compare < config_val
 }
 
-// Returns False if everything is fine, or the setting is 0
-fn eq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
-    !ignore_config(config_val.clone()) && config_val <= to_compare
+/// Checks if you need to ignore `config_val`. 
+/// If that is false, checks if `to_compare` is greater than or equal to `config_val`. 
+/// 
+/// Returns false if `config_val` is 0 or `to_compare` >= `config_val`. 
+fn geq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
+    !ignore_config(config_val.clone()) && to_compare >= config_val 
 }
 
-// Returns true if there's at least one diff that meets requirements, or the setting is 0
+/// Checks if you need to ignore `config_val`. 
+/// If that is false, checks if any `T` in the `to_compare` vector is greater than `config_val`. 
+/// 
+/// Returns true if there's at least one value that meets requirements, or the setting is 0.
 fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
     if ignore_config(config_val.clone()) {
         return true;
@@ -47,7 +59,10 @@ fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val:
     one_diff_meets_criteria
 }
 
-// Returns true if there's at least one diff that meets requirements, or the setting is 0
+/// Checks if you need to ignore `config_val`. 
+/// If that is false, checks if any `T` in the `to_compare` vector is less than `config_val`. 
+///
+/// Returns true if there's at least one value that meets requirements, or the setting is 0.
 fn lt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
     if ignore_config(config_val.clone()) {
         return true;
@@ -97,7 +112,7 @@ pub async fn filter_map(
 
     // does the user already have enough stuff in queue?
     if let Ok(in_queue) = drm.queue_where(&user).await
-        && eq_ignore(config.queue.queue_max, in_queue.len() as i32)
+        && geq_ignore(config.queue.queue_max, in_queue.len() as i32)
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
@@ -107,7 +122,7 @@ pub async fn filter_map(
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
-        && eq_ignore(config.queue.session_max, session_reqs)
+        && geq_ignore(config.queue.session_max, session_reqs)
     {
         return Err(format!(
             "You have no more requests this session! (max is {})",
@@ -118,6 +133,11 @@ pub async fn filter_map(
     // is map banned?
     if map.blacklisted {
         return Err("Map is banned from being requested!".into());
+    }
+
+    // is map ai-generated?
+    if !config.bsr.allow_ai && map.automapped {
+        return Err("Map is automapped!".into());
     }
 
     // is map older than a certain date?
@@ -175,6 +195,7 @@ pub async fn filter_map(
     let njs = map.diffs.iter().map(|diff| diff.note_jump_speed).collect::<Vec<f32>>();
 
     // NPS comparisons   
+    // greater than min
     if !gt_diffs_ignore(&nps, config.bsr.nps.min) {
         return Err(format!(
             "Map does not have a difficulty with NPS higher than {}",
@@ -182,6 +203,7 @@ pub async fn filter_map(
         ))
     }
 
+    // less than max
     if !lt_diffs_ignore(&nps, config.bsr.nps.max) {
         return Err(format!(
             "Map does not have a difficulty with NPS lower than {}",
@@ -189,7 +211,8 @@ pub async fn filter_map(
         ))
     }
 
-    // NJS comparisons
+    // NJS check
+    // greater than min 
     if !gt_diffs_ignore(&njs, config.bsr.njs.min) {
         return Err(format!(
             "Map does not have a difficulty with NJS higher than {}",
@@ -197,6 +220,7 @@ pub async fn filter_map(
         ))
     }
 
+    // less than max
     if !lt_diffs_ignore(&njs, config.bsr.njs.max) {
         return Err(format!(
             "Map does not have a difficulty with NJS lower than {}",

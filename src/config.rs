@@ -36,6 +36,7 @@ pub struct FloatRange {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct BSRConfig {
+    pub allow_ai: bool,
     pub date: BSRDateConfig,
     pub length: IntRange,
     pub nps: FloatRange,
