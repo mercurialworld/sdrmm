@@ -85,12 +85,12 @@ async fn set_queue(open: bool, drm: &DRM, db: &Database) {
         .await
     {
         Ok(_) => (),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to set queue status in-game."),
     }
 
     match db.set_queue_status(true) {
         Ok(_) => (),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to set queue status in database."),
     }
 }
 
@@ -109,12 +109,12 @@ async fn queue(command: String, drm: &DRM, db: &Database) {
 async fn clear_queue(drm: &DRM, db: &Database) {
     match drm.queue_control("clear").await {
         Ok(_) => (),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to clear queue in-game."),
     }
 
     match db.clear_user_requests() {
         Ok(_) => (),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to clear requests in database."),
     }
 }
 
@@ -180,7 +180,17 @@ async fn move_to_top(user: &str, drm: &DRM) {
 }
 
 async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
-    todo!()
+    if config.queue.session_max > 0 {
+        if let Ok(r) = db.get_user_requests(&user) {
+            match db.set_user_requests(&user, r - 1) {
+                Ok(_) => println!("Request refunded."),
+                Err(_) => println!("Unable to refund request"),
+            };
+
+        } else {
+            println!("User not found.");
+        }
+    }
 }
 
 
