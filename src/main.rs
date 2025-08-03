@@ -7,13 +7,10 @@ use crate::{
 };
 
 mod commands;
-#[expect(unused)]
 mod config;
-#[expect(unused)]
 mod database;
 #[expect(unused)]
 mod drm;
-#[expect(unused)]
 mod filter;
 
 fn format_time(duration: i32) -> String {
@@ -173,7 +170,14 @@ async fn get_link(drm: &DRM) {
 }
 
 async fn move_to_top(user: &str, drm: &DRM) {
-    todo!()
+    if let Ok(q) = drm.queue_where(&user).await {
+        let last_req = q.last().unwrap();
+
+        match drm.queue_control(&*format!("move/{}/1", last_req.spot)).await {
+            Ok(_) => println!("Map {} moved to top.", last_req.queue_item.bsr_key),
+            Err(_) => println!("Unable to move your recent request to top."),
+        };
+    }
 }
 
 async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
