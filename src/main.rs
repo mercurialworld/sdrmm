@@ -36,12 +36,12 @@ async fn new(drm: &DRM, db: &Database) {
 
     match db.clear_user_requests() {
         Ok(_) => println!("Cleared requests from database."),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to clear requests from database."),
     };
 
     match db.new_session(Utc::now(), true) {
         Ok(_) => println!("Created new session."),
-        Err(_) => println!("Something happened."),
+        Err(_) => println!("Unable to create new session."),
     };
 }
 
@@ -139,6 +139,13 @@ async fn request(
                 Some(s) => drm.add_with_service(&bsr, &user, &s).await,
                 None => drm.add(&bsr, &user).await,
             };
+
+            if config.queue.session_max > 0 {
+                let _ = match db.get_user_requests(&user) {
+                    Ok(r) => db.set_user_requests(&user, r + 1),
+                    Err(_) => db.add_user_requests(&user),
+                };
+            }
         }
         Err(e) => println!("{}", e),
     }
@@ -149,6 +156,20 @@ async fn add_wip(wip: String, user: String, drm: &DRM) {
         Ok(_) => (),
         Err(e) => println!("{}", e),
     };
+}
+
+async fn get_link(drm: &DRM) {
+    match drm.link().await {
+        Ok(hist) => {
+            let map = &hist.get(0).unwrap().history_item;
+
+            println!(
+                "{} - {} (mapped by {}) https://beatsaver.com/maps/{}",
+                map.artist, map.title, map.mapper, map.bsr_key
+            );
+        }
+        Err(_) => println!("No map available"),
+    }
 }
 
 #[main]
@@ -177,5 +198,6 @@ async fn main() {
         commands::Commands::Top { user: _ } => todo!(),
         commands::Commands::Oops { user: _ } => todo!(),
         commands::Commands::Refund { user: _ } => todo!(),
+        commands::Commands::Link => get_link(&drm).await,
     }
 }

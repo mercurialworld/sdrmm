@@ -2,9 +2,9 @@ use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
 use num::Num;
 
 use crate::{
-    config::{SDRMMConfig, ignore_config},
+    config::{ignore_config, SDRMMConfig},
     database::{Database, DatabaseError},
-    drm::{DRM, schema::DRMMap},
+    drm::{schema::{DRMMap, DRMMapDiff}, DRM},
 };
 
 fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
@@ -16,13 +16,52 @@ fn is_open(db: &Database) -> anyhow::Result<bool> {
 }
 
 // Returns False if everything is fine, or the setting is 0
-fn ignore_or_compare<T: Num + PartialOrd>(to_ignore: T, left: T, right: T) -> bool {
-    !ignore_config(to_ignore) && left < right
+fn gt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
+    !ignore_config(config_val.clone()) && to_compare > config_val
 }
 
 // Returns False if everything is fine, or the setting is 0
-fn ignore_or_equate<T: Num + PartialOrd + Clone>(option: T, map_val: T) -> bool {
-    !ignore_config(option.clone()) && option >= map_val
+fn lt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
+    !ignore_config(config_val.clone()) && to_compare < config_val
+}
+
+// Returns False if everything is fine, or the setting is 0
+fn eq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
+    !ignore_config(config_val.clone()) && config_val <= to_compare
+}
+
+// Returns true if there's at least one diff that meets requirements, or the setting is 0
+fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
+    if ignore_config(config_val.clone()) {
+        return true;
+    }
+
+    let mut one_diff_meets_criteria = false;
+
+    for diff_val in to_compare {
+        if *diff_val > config_val {
+            one_diff_meets_criteria = true;
+        }
+    }
+
+    one_diff_meets_criteria
+}
+
+// Returns true if there's at least one diff that meets requirements, or the setting is 0
+fn lt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
+    if ignore_config(config_val.clone()) {
+        return true;
+    }
+
+    let mut one_diff_meets_criteria = false;
+
+    for diff_val in to_compare {
+        if *diff_val < config_val {
+            one_diff_meets_criteria = true;
+        }
+    }
+
+    one_diff_meets_criteria
 }
 
 pub async fn filter_map(
@@ -58,7 +97,7 @@ pub async fn filter_map(
 
     // does the user already have enough stuff in queue?
     if let Ok(in_queue) = drm.queue_where(&user).await
-        && ignore_or_equate(config.queue.queue_max, in_queue.len() as i32)
+        && eq_ignore(config.queue.queue_max, in_queue.len() as i32)
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
@@ -68,7 +107,7 @@ pub async fn filter_map(
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
-        && ignore_or_equate(config.queue.session_max, session_reqs)
+        && eq_ignore(config.queue.session_max, session_reqs)
     {
         return Err(format!(
             "You have no more requests this session! (max is {})",
@@ -77,13 +116,12 @@ pub async fn filter_map(
     }
 
     // is map banned?
-    match map.blacklisted {
-        true => return Err("Map is banned from being requested!".into()),
-        false => (),
+    if map.blacklisted {
+        return Err("Map is banned from being requested!".into());
     }
 
     // is map older than a certain date?
-    match is_recent(
+    if !is_recent(
         map.upload_time,
         config
             .bsr
@@ -92,14 +130,11 @@ pub async fn filter_map(
             .and_time(NaiveTime::default())
             .and_utc(),
     ) {
-        true => (),
-        false => {
-            return Err(format!(
-                "Map is older than {} (uploaded {})",
-                config.bsr.date.earliest.format("%b %e, %Y"),
-                map.upload_time.format("%b %e, %Y"),
-            ));
-        }
+        return Err(format!(
+            "Map is older than {} (uploaded {})",
+            config.bsr.date.earliest.format("%b %e, %Y"),
+            map.upload_time.format("%b %e, %Y"),
+        ));
     }
 
     // is map younger than a certain number of days?
@@ -115,7 +150,7 @@ pub async fn filter_map(
     }
 
     // is the map too short?
-    if ignore_or_compare(config.bsr.length.min, map.duration, config.bsr.length.max) {
+    if lt_ignore(map.duration, config.bsr.length.min) {
         return Err(format!(
             "Map is shorter than {} seconds (is {} seconds)",
             config.bsr.length.min, map.duration
@@ -123,16 +158,52 @@ pub async fn filter_map(
     }
 
     // is the map too long?
-    if ignore_or_compare(config.bsr.length.max, config.bsr.length.max, map.duration) {
+    if gt_ignore(map.duration, config.bsr.length.max) {
         return Err(format!(
             "Map is longer than {} seconds (is {} seconds)",
             config.bsr.length.max, map.duration
         ));
     }
 
-    // [TODO] NPS/NJS check
+    // has the map already been played?
+    if !config.queue.replay && map.has_played {
+        return Err("Map has already been played this session!".into());
+    }
+
     // make a list of nps/njs of all difficulties
-    // if one of them is in limits, then it should be allowed through
+    let nps = map.diffs.iter().map(|diff| diff.notes_per_second).collect::<Vec<f32>>();
+    let njs = map.diffs.iter().map(|diff| diff.note_jump_speed).collect::<Vec<f32>>();
+
+    // NPS comparisons   
+    if !gt_diffs_ignore(&nps, config.bsr.nps.min) {
+        return Err(format!(
+            "Map does not have a difficulty with NPS higher than {}",
+            config.bsr.nps.min
+        ))
+    }
+
+    if !lt_diffs_ignore(&nps, config.bsr.nps.max) {
+        return Err(format!(
+            "Map does not have a difficulty with NPS lower than {}",
+            config.bsr.nps.max
+        ))
+    }
+
+    // NJS comparisons
+    if !gt_diffs_ignore(&njs, config.bsr.njs.min) {
+        return Err(format!(
+            "Map does not have a difficulty with NJS higher than {}",
+            config.bsr.njs.min
+        ))
+    }
+
+    if !lt_diffs_ignore(&njs, config.bsr.njs.max) {
+        return Err(format!(
+            "Map does not have a difficulty with NJS lower than {}",
+            config.bsr.njs.max
+        ))
+    }
+
 
     Ok(())
 }

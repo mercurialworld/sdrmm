@@ -65,4 +65,6 @@ pub enum Commands {
         /// The user whose request was refunded
         user: String,
     },
+    /// Gets a formatted message with current map information
+    Link,
 }
