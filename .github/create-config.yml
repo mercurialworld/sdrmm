@@ -1,6 +1,6 @@
 - name: Create config.yml
   run: |
-    cat << EOF > .env
+    cat << EOF > config.yml
     drm:
         url: "http://localhost"
         port: 13337

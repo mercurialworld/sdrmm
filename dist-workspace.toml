@@ -15,3 +15,6 @@ targets = ["x86_64-pc-windows-msvc"]
 github-build-setup = "../create-config.yml"
 # Extra static files to include in each App (path relative to this Cargo.toml's dir)
 include = ["config.yaml"]
+
+[dist.github-custom-runners]
+x86_64-pc-windows-msvc.container = "messense/cargo-xwin"
