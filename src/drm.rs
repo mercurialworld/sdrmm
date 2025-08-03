@@ -73,6 +73,7 @@ impl DRM {
     }
 
     // all history for the session
+    #[expect(unused)]
     pub async fn history(&self) -> DRMResult<Vec<DRMHistoryItem>> {
         self.get_endpoint("history").await
     }
@@ -110,7 +111,7 @@ impl DRM {
         let res = self
             .client
             .post(drm_url?.as_str())
-            .body({ url })
+            .body(url)
             .send()
             .await
             .map_err(ClientError::ReqwestError)?

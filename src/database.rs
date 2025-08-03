@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 use thiserror::Error;
 
-use crate::database::schema::{QueueStatus, SessionRequests};
+use crate::database::schema::{QueueStatus};
 
 pub(crate) mod schema;
 
@@ -51,7 +51,7 @@ impl Database {
         self.conn.execute(
             "INSERT INTO QueueStatus (timestamp, open) VALUES (?1, ?2)",
             (&timestamp.timestamp(), &open),
-        );
+        )?;
 
         Ok(())
     }
@@ -71,10 +71,10 @@ impl Database {
                 timestamp: row.get(0)?,
                 open: row.get(1)?,
             })
-        });
+        })?;
 
         // [FIXME] surely there's something better
-        Ok(result.unwrap().next().unwrap().unwrap().open)
+        Ok(result.next().unwrap().unwrap().open)
     }
 
     pub fn set_queue_status(&self, open: bool) -> DBResult<()> {
@@ -90,7 +90,7 @@ impl Database {
             SET open=?1 
             WHERE timestamp=CurrentSession.timestamp",
             (&open,),
-        );
+        )?;
 
         Ok(())
     }
@@ -114,7 +114,7 @@ impl Database {
         self.conn.execute(
             "INSERT INTO SessionRequests(user, requests) VALUES ?1, 0",
             (user,),
-        );
+        )?;
 
         Ok(())
     }
@@ -123,13 +123,13 @@ impl Database {
         self.conn.execute(
             "UPDATE SessionRequests SET requests=?1 WHERE user=?2",
             (requests, user),
-        );
+        )?;
 
         Ok(())
     }
 
     pub fn clear_user_requests(&self) -> DBResult<()> {
-        self.conn.execute("DELETE FROM SessionRequests", ());
+        self.conn.execute("DELETE FROM SessionRequests", ())?;
 
         Ok(())
     }

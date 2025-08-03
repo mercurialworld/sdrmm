@@ -9,7 +9,6 @@ use crate::{
 mod commands;
 mod config;
 mod database;
-#[expect(unused)]
 mod drm;
 mod filter;
 

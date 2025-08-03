@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc, serde::ts_seconds};
 use serde::Deserialize;
 
+#[expect(unused)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DRMMapDiff {
@@ -15,6 +16,7 @@ pub struct DRMMapDiff {
     pub beatleader_stars: f32,
 }
 
+#[expect(unused)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct MapMods {
@@ -26,6 +28,7 @@ pub struct MapMods {
 }
 
 #[derive(Debug, Deserialize)]
+#[expect(unused)]
 #[serde(rename_all = "PascalCase")]
 pub struct DRMMap {
     pub bsr_key: String,
@@ -75,6 +78,7 @@ pub struct DRMQueueItem {
     pub queue_item: DRMMap,
 }
 
+#[expect(unused)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DRMHistoryItem {
@@ -83,6 +87,7 @@ pub struct DRMHistoryItem {
     pub history_item: DRMMap,
 }
 
+#[expect(unused)]
 #[derive(Debug, Deserialize)]
 pub struct DRMMessage {
     pub message: String,

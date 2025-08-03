@@ -3,8 +3,8 @@ use num::Num;
 
 use crate::{
     config::{ignore_config, SDRMMConfig},
-    database::{Database, DatabaseError},
-    drm::{schema::{DRMMap, DRMMapDiff}, DRM},
+    database::{Database},
+    drm::{schema::{DRMMap}, DRM},
 };
 
 fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
@@ -139,11 +139,11 @@ pub async fn filter_map(
 
     // is map younger than a certain number of days?
     if !ignore_config(config.bsr.date.min_age)
-        && let Some(new_map) =
+        && let Some(_) =
             Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64))
     {
         return Err(format!(
-            "Map is less than {} years old (uploaded {})",
+            "Map is less than {} days old (uploaded {})",
             config.bsr.date.min_age,
             map.upload_time.format("%b %e, %Y"),
         ));
