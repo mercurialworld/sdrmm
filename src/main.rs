@@ -172,7 +172,10 @@ async fn move_to_top(user: &str, drm: &DRM) {
     if let Ok(q) = drm.queue_where(&user).await {
         let last_req = q.last().unwrap();
 
-        match drm.queue_control(&*format!("move/{}/1", last_req.spot)).await {
+        match drm
+            .queue_control(&*format!("move/{}/1", last_req.spot))
+            .await
+        {
             Ok(_) => println!("Map {} moved to top.", last_req.queue_item.bsr_key),
             Err(_) => println!("Unable to move your recent request to top."),
         };
@@ -186,13 +189,11 @@ async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
                 Ok(_) => println!("Request refunded."),
                 Err(_) => println!("Unable to refund request"),
             };
-
         } else {
             println!("User not found.");
         }
     }
 }
-
 
 #[main]
 async fn main() {

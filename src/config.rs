@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use config::{Config, ConfigError, File};
-use num::{Num};
+use num::Num;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Default, Clone)]

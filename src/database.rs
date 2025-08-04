@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 use thiserror::Error;
 
-use crate::database::schema::{QueueStatus};
+use crate::database::schema::QueueStatus;
 
 pub(crate) mod schema;
 

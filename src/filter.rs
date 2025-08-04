@@ -2,9 +2,9 @@ use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
 use num::Num;
 
 use crate::{
-    config::{ignore_config, SDRMMConfig},
-    database::{Database},
-    drm::{schema::{DRMMap}, DRM},
+    config::{SDRMMConfig, ignore_config},
+    database::Database,
+    drm::{DRM, schema::DRMMap},
 };
 
 fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
@@ -15,33 +15,33 @@ fn is_open(db: &Database) -> anyhow::Result<bool> {
     Ok(db.get_queue_status()?)
 }
 
-/// Checks if you need to ignore `config_val`. 
-/// If that is false, checks if `to_compare` is greater than `config_val`. 
-/// 
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if `to_compare` is greater than `config_val`.
+///
 /// Returns false if `config_val` is 0 or `to_compare` < `config_val`.
 fn gt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
     !ignore_config(config_val.clone()) && to_compare > config_val
 }
 
-/// Checks if you need to ignore `config_val`. 
-/// If that is false, checks if `to_compare` is less than `config_val`. 
-/// 
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if `to_compare` is less than `config_val`.
+///
 /// Returns false if `config_val` is 0 or `to_compare` > `config_val`.
 fn lt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
     !ignore_config(config_val.clone()) && to_compare < config_val
 }
 
-/// Checks if you need to ignore `config_val`. 
-/// If that is false, checks if `to_compare` is greater than or equal to `config_val`. 
-/// 
-/// Returns false if `config_val` is 0 or `to_compare` >= `config_val`. 
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if `to_compare` is greater than or equal to `config_val`.
+///
+/// Returns false if `config_val` is 0 or `to_compare` >= `config_val`.
 fn geq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
-    !ignore_config(config_val.clone()) && to_compare >= config_val 
+    !ignore_config(config_val.clone()) && to_compare >= config_val
 }
 
-/// Checks if you need to ignore `config_val`. 
-/// If that is false, checks if any `T` in the `to_compare` vector is greater than `config_val`. 
-/// 
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if any `T` in the `to_compare` vector is greater than `config_val`.
+///
 /// Returns true if there's at least one value that meets requirements, or the setting is 0.
 fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
     if ignore_config(config_val.clone()) {
@@ -59,8 +59,8 @@ fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val:
     one_diff_meets_criteria
 }
 
-/// Checks if you need to ignore `config_val`. 
-/// If that is false, checks if any `T` in the `to_compare` vector is less than `config_val`. 
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if any `T` in the `to_compare` vector is less than `config_val`.
 ///
 /// Returns true if there's at least one value that meets requirements, or the setting is 0.
 fn lt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
@@ -88,10 +88,10 @@ pub async fn filter_map(
     modadd: Option<bool>,
 ) -> Result<(), String> {
     // modadd
-    if let Some(m) = modadd {
-        if m {
-            return Ok(());
-        }
+    if let Some(m) = modadd
+        && m
+    {
+        return Ok(());
     }
 
     // is queue closed?
@@ -159,8 +159,7 @@ pub async fn filter_map(
 
     // is map younger than a certain number of days?
     if !ignore_config(config.bsr.date.min_age)
-        && let Some(_) =
-            Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64))
+        && let Some(_) = Utc::now().checked_sub_days(Days::new(config.bsr.date.min_age as u64))
     {
         return Err(format!(
             "Map is less than {} days old (uploaded {})",
@@ -191,16 +190,24 @@ pub async fn filter_map(
     }
 
     // make a list of nps/njs of all difficulties
-    let nps = map.diffs.iter().map(|diff| diff.notes_per_second).collect::<Vec<f32>>();
-    let njs = map.diffs.iter().map(|diff| diff.note_jump_speed).collect::<Vec<f32>>();
+    let nps = map
+        .diffs
+        .iter()
+        .map(|diff| diff.notes_per_second)
+        .collect::<Vec<f32>>();
+    let njs = map
+        .diffs
+        .iter()
+        .map(|diff| diff.note_jump_speed)
+        .collect::<Vec<f32>>();
 
-    // NPS comparisons   
+    // NPS comparisons
     // greater than min
     if !gt_diffs_ignore(&nps, config.bsr.nps.min) {
         return Err(format!(
             "Map does not have a difficulty with NPS higher than {}",
             config.bsr.nps.min
-        ))
+        ));
     }
 
     // less than max
@@ -208,16 +215,16 @@ pub async fn filter_map(
         return Err(format!(
             "Map does not have a difficulty with NPS lower than {}",
             config.bsr.nps.max
-        ))
+        ));
     }
 
     // NJS check
-    // greater than min 
+    // greater than min
     if !gt_diffs_ignore(&njs, config.bsr.njs.min) {
         return Err(format!(
             "Map does not have a difficulty with NJS higher than {}",
             config.bsr.njs.min
-        ))
+        ));
     }
 
     // less than max
@@ -225,9 +232,8 @@ pub async fn filter_map(
         return Err(format!(
             "Map does not have a difficulty with NJS lower than {}",
             config.bsr.njs.max
-        ))
+        ));
     }
-
 
     Ok(())
 }
