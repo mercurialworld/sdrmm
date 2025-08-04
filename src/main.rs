@@ -11,6 +11,7 @@ mod config;
 mod database;
 mod drm;
 mod filter;
+mod helpers;
 
 fn format_time(duration: i32) -> String {
     let seconds = duration % 60;

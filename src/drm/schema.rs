@@ -1,5 +1,14 @@
 use chrono::{DateTime, Utc, serde::ts_seconds};
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
+
+#[derive(Debug, Deserialize_repr, PartialEq)]
+#[repr(u8)]
+pub enum VoteStatus {
+    None = 0,
+    Liked,
+    Disliked,
+}
 
 #[expect(unused)]
 #[derive(Debug, Deserialize)]
@@ -59,7 +68,7 @@ pub struct DRMMap {
     pub curated: bool,
     pub curator_name: String,
     pub playlists: Vec<String>,
-    pub vote_status: i32,
+    pub vote_status: VoteStatus,
     #[serde(rename = "UsesChroma")]
     pub chroma: bool,
     #[serde(rename = "UsesCinema")]

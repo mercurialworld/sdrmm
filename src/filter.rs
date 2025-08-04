@@ -1,10 +1,12 @@
 use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
-use num::Num;
 
 use crate::{
     config::{SDRMMConfig, ignore_config},
     database::Database,
     drm::{DRM, schema::DRMMap},
+    helpers::{
+        ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec, match_in_two_vecs,
+    },
 };
 
 fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
@@ -13,62 +15,6 @@ fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
 
 fn is_open(db: &Database) -> anyhow::Result<bool> {
     Ok(db.get_queue_status()?)
-}
-
-/// Checks if you need to ignore `config_val`.
-/// If that is false, checks if `to_compare` is greater than or equal to `config_val`.
-///
-/// Returns false if `config_val` is 0 or `to_compare` >= `config_val`.
-fn geq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
-    !ignore_config(config_val.clone()) && to_compare >= config_val
-}
-
-/// Checks if you need to ignore `config_val`.
-/// If that is false, checks if `to_compare` is less than or equal to `config_val`.
-///
-/// Returns false if `config_val` is 0 or `to_compare` <= `config_val`.
-fn leq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
-    !ignore_config(config_val.clone()) && config_val >= to_compare 
-}
-
-/// Checks if you need to ignore `config_val`.
-/// If that is false, checks if any `T` in the `to_compare` vector is greater than `config_val`.
-///
-/// Returns true if there's at least one value that meets requirements, or the setting is 0.
-fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
-    if ignore_config(config_val.clone()) {
-        return true;
-    }
-
-    let mut one_diff_meets_criteria = false;
-
-    for diff_val in to_compare {
-        if *diff_val >= config_val {
-            one_diff_meets_criteria = true;
-        }
-    }
-
-    one_diff_meets_criteria
-}
-
-/// Checks if you need to ignore `config_val`.
-/// If that is false, checks if any `T` in the `to_compare` vector is less than `config_val`.
-///
-/// Returns true if there's at least one value that meets requirements, or the setting is 0.
-fn lt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val: T) -> bool {
-    if ignore_config(config_val.clone()) {
-        return true;
-    }
-
-    let mut one_diff_meets_criteria = false;
-
-    for diff_val in to_compare {
-        if *diff_val <= config_val {
-            one_diff_meets_criteria = true;
-        }
-    }
-
-    one_diff_meets_criteria
 }
 
 pub async fn filter_map(
@@ -114,7 +60,7 @@ pub async fn filter_map(
 
     // does the user already have enough stuff in queue?
     if let Ok(in_queue) = drm.queue_where(&user).await
-        && geq_ignore(config.queue.queue_max, in_queue.len() as i32)
+        && !ignore_or_geq(config.queue.queue_max, in_queue.len() as i32)
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
@@ -124,7 +70,7 @@ pub async fn filter_map(
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
-        && geq_ignore(config.queue.session_max, session_reqs)
+        && !ignore_or_geq(config.queue.session_max, session_reqs)
     {
         return Err(format!(
             "You have no more requests this session! (max is {})",
@@ -132,9 +78,43 @@ pub async fn filter_map(
         ));
     }
 
+    // vote status
+    match map.vote_status {
+        crate::drm::schema::VoteStatus::None => (),
+        crate::drm::schema::VoteStatus::Liked => {
+            if config.map_vote.allow_liked {
+                return Ok(());
+            }
+        }
+        crate::drm::schema::VoteStatus::Disliked => {
+            if config.map_vote.deny_disliked {
+                return Err("The streamer probably doesn't like the map.".into());
+            }
+        }
+    }
+
     // is map banned?
     if map.blacklisted {
         return Err("Map is banned from being requested!".into());
+    }
+
+    // is map in an allowed playlist?
+    if let Some(playlists) = &config.allowed_playlists
+        && match_in_two_vecs(map.playlists.clone(), playlists.to_vec())
+    {
+        return Ok(());
+    }
+
+    // is map rating greater than a certain minimum?
+    // needs a live beatsaver query
+    if let Ok(live_map) = drm.query_nocache(&map.bsr_key).await
+        && !ignore_or_geq(config.bsr.min_rating, live_map.rating * 100.0)
+    {
+        return Err(format!(
+            "Map rating is less than {:.2}% (is {:.2}%)",
+            config.bsr.min_rating,
+            live_map.rating * 100.0
+        ));
     }
 
     // is map ai-generated?
@@ -171,7 +151,7 @@ pub async fn filter_map(
     }
 
     // is the map too short?
-    if leq_ignore(map.duration, config.bsr.length.min) {
+    if !ignore_or_geq(config.bsr.length.min, map.duration) {
         return Err(format!(
             "Map is shorter than {} seconds (is {} seconds)",
             config.bsr.length.min, map.duration
@@ -179,7 +159,7 @@ pub async fn filter_map(
     }
 
     // is the map too long?
-    if geq_ignore(map.duration, config.bsr.length.max) {
+    if !ignore_or_leq(config.bsr.length.max, map.duration) {
         return Err(format!(
             "Map is longer than {} seconds (is {} seconds)",
             config.bsr.length.max, map.duration
@@ -205,7 +185,7 @@ pub async fn filter_map(
 
     // NPS comparisons
     // greater than min
-    if !gt_diffs_ignore(&nps, config.bsr.nps.min) {
+    if !ignore_or_geq_vec(&nps, config.bsr.nps.min) {
         return Err(format!(
             "Map does not have a difficulty with NPS higher than {}",
             config.bsr.nps.min
@@ -213,7 +193,7 @@ pub async fn filter_map(
     }
 
     // less than max
-    if !lt_diffs_ignore(&nps, config.bsr.nps.max) {
+    if !ignore_or_leq_vec(&nps, config.bsr.nps.max) {
         return Err(format!(
             "Map does not have a difficulty with NPS lower than {}",
             config.bsr.nps.max
@@ -222,7 +202,7 @@ pub async fn filter_map(
 
     // NJS check
     // greater than min
-    if !gt_diffs_ignore(&njs, config.bsr.njs.min) {
+    if !ignore_or_geq_vec(&njs, config.bsr.njs.min) {
         return Err(format!(
             "Map does not have a difficulty with NJS higher than {}",
             config.bsr.njs.min
@@ -230,7 +210,7 @@ pub async fn filter_map(
     }
 
     // less than max
-    if !lt_diffs_ignore(&njs, config.bsr.njs.max) {
+    if !ignore_or_leq_vec(&njs, config.bsr.njs.max) {
         return Err(format!(
             "Map does not have a difficulty with NJS lower than {}",
             config.bsr.njs.max

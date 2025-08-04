@@ -57,6 +57,11 @@ impl DRM {
         self.get_endpoint(&format!("query/{}", id)).await
     }
 
+    // query map info from beatsaver
+    pub async fn query_nocache(&self, id: &str) -> DRMResult<DRMMap> {
+        self.get_endpoint(&format!("query/nocache/{}", id)).await
+    }
+
     // the entire queue
     pub async fn queue(&self) -> DRMResult<Vec<DRMMap>> {
         self.get_endpoint("queue").await

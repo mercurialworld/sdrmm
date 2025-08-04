@@ -38,6 +38,7 @@ pub struct FloatRange {
 #[derive(Debug, Deserialize, Default)]
 pub struct BSRConfig {
     pub allow_ai: bool,
+    pub min_rating: f32,
     pub date: BSRDateConfig,
     pub length: IntRange,
     pub nps: FloatRange,
@@ -45,10 +46,18 @@ pub struct BSRConfig {
 }
 
 #[derive(Debug, Deserialize, Default)]
+pub struct MapVoteConfig {
+    pub allow_liked: bool,
+    pub deny_disliked: bool,
+}
+
+#[derive(Debug, Deserialize, Default)]
 pub struct SDRMMConfig {
     pub drm: DRMConfig,
     pub queue: QueueConfig,
     pub bsr: BSRConfig,
+    pub map_vote: MapVoteConfig,
+    pub allowed_playlists: Option<Vec<String>>,
 }
 
 impl SDRMMConfig {

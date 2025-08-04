@@ -30,9 +30,10 @@ queue:
     session_max: 0    # How many maps can be requested per session. Set to 0 to ignore.
     queue_max: 0      # How many maps of a user can be in the queue. Set to 0 to ignore.
     repeat: false     # Whether to add the same map more than once to the queue.
-    replay: true      # Whether to play maps that have already been played this session.
+    replay: false     # Whether to play maps that have already been played this session.
 bsr:
     allow_ai: false            # Whether to allow Beat Sage/other such AI maps. Honestly, leave this false.
+    min_rating: 0.0            # Minimum rating on BeatSaver. Set to 0 to ignore.
     date:
         earliest: 1970-01-01   # YYYY-MM-DD format
         min_age: 0             # How old a map is, in days. Useful if you don't want users to request new maps.
@@ -45,4 +46,9 @@ bsr:
     njs: 
         min: 0.0               # Minimum NJS. Set to 0 to ignore.
         max: 0.0               # Maximum NJS. Set to 0 to ignore.
+map_vote:
+    allow_liked: true          # Whether to auto-allow maps that have been liked.
+    deny_disliked: true        # Whether to deny maps that have been disliked.
+playlists:                     # A list of local playlists a map can be in, in order to auto-allow the map. Can be empty.
+    - ""    
 ```
