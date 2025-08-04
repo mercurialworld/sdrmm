@@ -100,7 +100,7 @@ async fn queue(command: String, drm: &DRM, db: &Database) {
         "open" => set_queue(true, drm, db).await,
         "close" => set_queue(false, drm, db).await,
         "toggle" => match db.get_queue_status() {
-            Ok(s) => set_queue(s, drm, db).await,
+            Ok(s) => set_queue(!s, drm, db).await,
             Err(_) => (),
         },
         &_ => println!("Possible commands are open/close/toggle."),
