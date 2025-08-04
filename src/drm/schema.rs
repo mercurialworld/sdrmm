@@ -61,11 +61,22 @@ pub struct DRMMap {
     pub curator_name: String,
     pub playlists: Vec<String>,
     pub vote_status: i32,
-    pub uses_chroma: bool,
-    pub uses_cinema: bool,
-    pub uses_mapping_extensions: bool,
-    pub uses_noodle_extensions: bool,
-    pub uses_vivify: bool,
+    #[serde(rename = "UsesChroma")]
+    pub chroma: bool,
+    #[serde(rename = "UsesCinema")]
+    pub cinema: bool,
+    #[serde(rename = "UsesMappingExtensions")]
+    pub mapping_extensions: bool,
+    #[serde(rename = "UsesNoodleExtensions")]
+    pub noodle_extensions: bool,
+    #[serde(rename = "UsesVivify")]
+    pub vivify: bool,
+    #[serde(rename = "DataIsFromLocalMap")]
+    pub from_local_map: bool,
+    #[serde(rename = "DataIsFromLocalCache")]
+    pub from_local_cache: bool,
+    #[serde(rename = "DataIsFromBeatSaver")]
+    pub from_beatsaver: bool,
     pub has_played: bool,
     pub blacklisted: bool,
     pub diffs: Vec<DRMMapDiff>,
