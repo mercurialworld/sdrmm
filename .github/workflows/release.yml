@@ -136,6 +136,7 @@ jobs:
           queue:
               session_max: 0    # How many maps can be requested per session. Set to 0 to ignore.
               queue_max: 0      # How many maps of a user can be in the queue. Set to 0 to ignore.
+              repeat: false     # Whether to add the same map more than once to the queue.
               replay: true      # Whether to play maps that have already been played this session.
           bsr:
               allow_ai: false            # Whether to allow Beat Sage maps. Honestly, leave this false.
