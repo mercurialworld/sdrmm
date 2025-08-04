@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand, command};
+use clap::{command, ArgAction, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 pub struct SDRMM {
@@ -22,6 +22,7 @@ pub enum Commands {
         service: Option<String>,
         /// Whether a mod added this map or not
         #[arg(long)]
+        #[clap(action=ArgAction::SetTrue)]
         modadd: Option<bool>,
     },
     /// Sends a request to DRM's addWIP endpoint
