@@ -13,6 +13,7 @@ pub struct DRMConfig {
 pub struct QueueConfig {
     pub session_max: i32,
     pub queue_max: i32,
+    pub repeat: bool,
     pub replay: bool,
 }
 

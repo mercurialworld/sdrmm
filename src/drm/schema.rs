@@ -42,8 +42,7 @@ pub struct DRMMap {
     pub censor_artist: bool,
     pub mapper: String,
     pub censor_mapper: bool,
-    #[serde(rename = "MetaDataHasSplicedCensor")]
-    pub metadata_has_spliced_censor: Option<bool>,
+    pub metadata_has_spliced_censor: bool,
     pub duration: i32,
     pub votes: Vec<i32>,
     pub rating: f32,

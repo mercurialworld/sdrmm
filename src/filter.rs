@@ -87,7 +87,17 @@ pub async fn filter_map(
     user: &str,
     modadd: Option<bool>,
 ) -> Result<(), String> {
+    // is the map already in queue?
+    if !config.queue.repeat
+        && let Ok(q) = drm.queue().await
+        && let Some(_) = q.iter().find(|&map_data| map_data.bsr_key == map.bsr_key)
+    {
+        return Err("Map is already in queue!".into());
+    }
+
     // modadd
+    // putting this after the queue doubles check so we don't have a repeat of
+    // the one time 3 of us modadded !bsr 48dd1 to the queue
     if let Some(m) = modadd
         && m
     {
