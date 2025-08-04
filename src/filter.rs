@@ -16,27 +16,19 @@ fn is_open(db: &Database) -> anyhow::Result<bool> {
 }
 
 /// Checks if you need to ignore `config_val`.
-/// If that is false, checks if `to_compare` is greater than `config_val`.
-///
-/// Returns false if `config_val` is 0 or `to_compare` < `config_val`.
-fn gt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
-    !ignore_config(config_val.clone()) && to_compare > config_val
-}
-
-/// Checks if you need to ignore `config_val`.
-/// If that is false, checks if `to_compare` is less than `config_val`.
-///
-/// Returns false if `config_val` is 0 or `to_compare` > `config_val`.
-fn lt_ignore<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -> bool {
-    !ignore_config(config_val.clone()) && to_compare < config_val
-}
-
-/// Checks if you need to ignore `config_val`.
 /// If that is false, checks if `to_compare` is greater than or equal to `config_val`.
 ///
 /// Returns false if `config_val` is 0 or `to_compare` >= `config_val`.
 fn geq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
     !ignore_config(config_val.clone()) && to_compare >= config_val
+}
+
+/// Checks if you need to ignore `config_val`.
+/// If that is false, checks if `to_compare` is less than or equal to `config_val`.
+///
+/// Returns false if `config_val` is 0 or `to_compare` <= `config_val`.
+fn leq_ignore<T: Num + PartialOrd + Clone>(config_val: T, to_compare: T) -> bool {
+    !ignore_config(config_val.clone()) && config_val >= to_compare 
 }
 
 /// Checks if you need to ignore `config_val`.
@@ -51,7 +43,7 @@ fn gt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val:
     let mut one_diff_meets_criteria = false;
 
     for diff_val in to_compare {
-        if *diff_val > config_val {
+        if *diff_val >= config_val {
             one_diff_meets_criteria = true;
         }
     }
@@ -71,7 +63,7 @@ fn lt_diffs_ignore<T: Num + PartialOrd + Clone>(to_compare: &Vec<T>, config_val:
     let mut one_diff_meets_criteria = false;
 
     for diff_val in to_compare {
-        if *diff_val < config_val {
+        if *diff_val <= config_val {
             one_diff_meets_criteria = true;
         }
     }
@@ -179,7 +171,7 @@ pub async fn filter_map(
     }
 
     // is the map too short?
-    if lt_ignore(map.duration, config.bsr.length.min) {
+    if leq_ignore(map.duration, config.bsr.length.min) {
         return Err(format!(
             "Map is shorter than {} seconds (is {} seconds)",
             config.bsr.length.min, map.duration
@@ -187,7 +179,7 @@ pub async fn filter_map(
     }
 
     // is the map too long?
-    if gt_ignore(map.duration, config.bsr.length.max) {
+    if geq_ignore(map.duration, config.bsr.length.max) {
         return Err(format!(
             "Map is longer than {} seconds (is {} seconds)",
             config.bsr.length.max, map.duration
