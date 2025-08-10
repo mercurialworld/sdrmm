@@ -60,7 +60,7 @@ pub async fn filter_map(
 
     // does the user already have enough stuff in queue?
     if let Ok(in_queue) = drm.queue_where(&user).await
-        && !ignore_or_geq(config.queue.queue_max, in_queue.len() as i32)
+        && !ignore_or_lt(config.queue.queue_max, in_queue.len() as i32)
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
@@ -70,7 +70,7 @@ pub async fn filter_map(
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
-        && !ignore_or_geq(config.queue.session_max, session_reqs)
+        && !ignore_or_lt(config.queue.session_max, session_reqs)
     {
         return Err(format!(
             "You have no more requests this session! (max is {})",
