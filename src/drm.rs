@@ -106,12 +106,12 @@ impl DRM {
             .map_err(ClientError::URLError)?
             .join(&format!("addWip?user={}", user));
 
-        let mut url = wip.into();
+        let url: String = wip.into();
 
-        if !wip.starts_with("https://") {
-            // assume it's a wipbot code
-            url = format!("https://wipbot.com/wips/{}.zip", wip);
-        }
+        // if !wip.starts_with("https://") {
+        //     // assume it's a wipbot code
+        //     url = format!("https://wipbot.com/wips/{}.zip", wip);
+        // }
 
         let res = self
             .client
