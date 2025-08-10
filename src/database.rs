@@ -88,7 +88,7 @@ impl Database {
             )
             UPDATE QueueStatus 
             SET open=?1 
-            WHERE timestamp=CurrentSession.timestamp",
+            WHERE timestamp=(SELECT timestamp FROM CurrentSession)",
             (&open,),
         )?;
 

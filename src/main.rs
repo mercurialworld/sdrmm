@@ -94,9 +94,10 @@ async fn set_queue(open: bool, drm: &DRM, db: &Database) {
         Err(_) => println!("Unable to set queue status in-game."),
     }
 
-    match db.set_queue_status(true) {
+    match db.set_queue_status(open) {
         Ok(_) => (),
-        Err(_) => println!("Unable to set queue status in database."),
+        Err(e) => println!("{:?}", e),
+        // Err(_) => println!("Unable to set queue status in database."),
     }
 }
 
