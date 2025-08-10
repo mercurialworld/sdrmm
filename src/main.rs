@@ -45,11 +45,16 @@ async fn new(drm: &DRM, db: &Database) {
 async fn get_queue(user: Option<String>, drm: &DRM) {
     match drm.queue().await {
         Ok(q) => {
+            if q.len() == 0 {
+                println!("Queue is empty!");
+                return;
+            }
+
             let sum: i32 = q
                 .iter()
                 .map(|map| map.duration)
                 .reduce(|s, m| s + m)
-                .unwrap();
+                .unwrap_or_default();
 
             print!(
                 "There are {} maps in queue (length {}).",
