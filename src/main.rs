@@ -132,17 +132,30 @@ async fn request(
 
     match filter_map(&map, drm, &config, db, &user, modadd).await {
         Ok(_) => {
+            let mut message_builder: String = format!("{} added to queue.", &bsr);
+
             let _ = match service {
                 Some(s) => drm.add_with_service(&bsr, &user, &s).await,
                 None => drm.add(&bsr, &user).await,
             };
 
             if config.queue.session_max > 0 {
+                message_builder.push_str(" You have ");
+
                 let _ = match db.get_user_requests(&user) {
-                    Ok(r) => db.set_user_requests(&user, r + 1),
-                    Err(_) => db.add_user_requests(&user),
+                    Ok(r) => {
+                        let _ = db.set_user_requests(&user, r + 1);
+                        message_builder.push_str(&format!("{} requests left.", r + 1));
+                    }
+                    Err(_) => {
+                        let _ = db.add_user_requests(&user);
+                        message_builder
+                            .push_str(&format!("{} requests left.", config.queue.session_max - 1));
+                    }
                 };
             }
+
+            println!("{}", message_builder);
         }
         Err(e) => println!("{}", e),
     }
