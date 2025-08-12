@@ -3,7 +3,11 @@ use clap::Parser;
 use tokio::main;
 
 use crate::{
-    commands::SDRMM, config::SDRMMConfig, database::Database, drm::DRM, filter::filter_map,
+    commands::SDRMM,
+    config::SDRMMConfig,
+    database::Database,
+    drm::{DRM, schema::DRMMap},
+    filter::filter_map,
 };
 
 mod commands;
@@ -26,13 +30,14 @@ fn format_time(duration: i32) -> String {
 }
 
 // [TODO] PLEASE WRITE THIS BETTER
-async fn new(drm: &DRM, db: &Database) {
+async fn new(drm: &DRM, db: &Database, config: &SDRMMConfig) {
     let now = Utc::now();
 
     // difference between last recorded session and now is less than (config value from DRM)
     if let Some(last_session_time) =
         DateTime::<Utc>::from_timestamp(db.get_latest_session().unwrap().timestamp.into(), 0)
-        && now.signed_duration_since(last_session_time) > TimeDelta::minutes(60)
+        && now.signed_duration_since(last_session_time)
+            > TimeDelta::minutes(config.drm.new_session_length.into())
     {
         // is history empty in-game? if not, then don't bother
         if let Ok(hist) = drm.history().await
@@ -40,23 +45,23 @@ async fn new(drm: &DRM, db: &Database) {
         {
             match drm.queue_control("clear").await {
                 Ok(_) => println!("Queue cleared from in-game!"),
-                Err(_) => println!("Unable to clear queue from in-game."),
+                Err(_) => println!("unable to clear queue from in-game."),
             };
 
             match db.clear_user_requests() {
                 Ok(_) => println!("Cleared requests from database."),
-                Err(_) => println!("Unable to clear requests from database."),
+                Err(_) => println!("unable to clear requests from database."),
             };
 
             match db.new_session(Utc::now(), true) {
                 Ok(_) => println!("Created new session."),
-                Err(_) => println!("Unable to create new session."),
+                Err(_) => println!("unable to create new session."),
             };
         } else {
-            println!("no need for new session, history already empty");
+            println!("no need for new session, history already empty!");
         }
     } else {
-        println!("no need for new session, not long enough");
+        println!("no need for new session, not long enough!");
     }
 }
 
@@ -99,7 +104,7 @@ async fn get_queue(user: Option<String>, drm: &DRM) {
 
             println!();
         }
-        Err(_) => println!("Unable to get queue."),
+        Err(_) => println!("unable to get queue."),
     }
 }
 
@@ -220,6 +225,45 @@ async fn move_to_top(user: &str, drm: &DRM) {
     }
 }
 
+async fn oops(user: &str, drm: &DRM) -> bool {
+    // check if there's a queue
+    if let Ok(current_queue) = drm.queue().await
+        && current_queue.len() > 0
+    {
+        // check if user has requests in queue
+        let user_reqs: Vec<&DRMMap> = current_queue
+            .iter()
+            .filter(|&m| m.user.as_ref().unwrap() == user)
+            .collect();
+
+        if user_reqs.len() > 0 {
+            // get last request
+            let last_bsr = &user_reqs.last().unwrap().bsr_key;
+
+            // create queue with request removed
+            let new_queue: Vec<&DRMMap> = current_queue
+                .iter()
+                .filter(|&m| m.bsr_key != *last_bsr)
+                .collect();
+
+            // clear queue
+            let _ = drm.queue_control("clear").await;
+
+            // re-request everything!
+            for map in new_queue.iter() {
+                let _ = drm.add(&map.bsr_key, &map.user.as_ref().unwrap());
+            }
+
+            println!("Request {} removed from queue.", last_bsr);
+
+            return true;
+        }
+    }
+    println!("Unable to remove recent request from queue.");
+
+    false
+}
+
 async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
     if config.queue.session_max > 0 {
         if let Ok(r) = db.get_user_requests(&user) {
@@ -240,12 +284,15 @@ async fn main() {
     let db = Database::from_file("database.db").unwrap();
     let _ = db.init_db();
 
-    let drm = DRM::new(sdrmm_config.drm.url.clone(), sdrmm_config.drm.port);
+    let drm = DRM::new(
+        sdrmm_config.drm.url.clone(),
+        sdrmm_config.drm.port.try_into().unwrap(),
+    );
 
     let args = SDRMM::parse();
 
     match args.command {
-        commands::Commands::New => new(&drm, &db).await,
+        commands::Commands::New => new(&drm, &db, &sdrmm_config).await,
         commands::Commands::Request {
             id,
             user,
@@ -259,5 +306,12 @@ async fn main() {
         commands::Commands::Top { user } => move_to_top(&user, &drm).await,
         commands::Commands::Refund { user } => refund_request(&user, &db, &sdrmm_config).await,
         commands::Commands::Link => get_link(&drm).await,
+        commands::Commands::Oops { user } => {
+            let res = oops(&user, &drm).await;
+
+            if res {
+                refund_request(&user, &db, &sdrmm_config).await
+            }
+        }
     }
 }

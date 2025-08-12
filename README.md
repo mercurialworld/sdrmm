@@ -18,6 +18,7 @@ This is a CLI program, as it was meant to be called by Mix It Up's "Executable" 
 - `sdrmm getqueue (--user/-u <USERNAME>)`: Returns a formatted message with how many songs in the queue and how long the queue is. Optionally, shows where a user's requests are in the queue.
 - `sdrmm clear`: Clears the queue. **If you're using this program and have `session_max` set, it is highly recommended to use this whenever you clear the queue.**
 - `sdrmm top <USERNAME>`: Moves the most recent request of a user to the top of queue. **The user must have requested something first.**
+- `sdrmm oops <USERNAME>`: Undoes the most recent request of a user.
 - `sdrmm refund <USERNAME>`: If streamer has request limits and a map is banned/skipped or the queue is cleared, adds 1 to the number of requests a user has.
 
 # Config
@@ -26,14 +27,18 @@ The config is written in YAML. sdrmm expects the config to be called `config.yam
 
 ```yaml
 drm:
-    url: "http://localhost"
-    port: 13337
+    url: "http://localhost"    # The URL where the DRM server is hosted.
+    port: 13337                # The port of the DRM server.
+    new_session_length: 60     # Time, in minutes, to consider a session "new".
 queue:
     session_max: 0    # How many maps can be requested per session. Set to 0 to ignore.
     queue_max: 0      # How many maps of a user can be in the queue. Set to 0 to ignore.
     repeat: false     # Whether to add the same map more than once to the queue.
     replay: false     # Whether to play maps that have already been played this session.
 bsr:
+    censors:
+        deny_censored: false   # Whether to deny a map if any of the "Censor" fields are true.
+        deny_urls: false       # Whether to deny a map if it contains any domains. Depends on `deny_censored`.
     allow_ai: false            # Whether to allow Beat Sage/other such AI maps. Honestly, leave this false.
     min_rating: 0.0            # Minimum rating on BeatSaver. Set to 0 to ignore.
     date:

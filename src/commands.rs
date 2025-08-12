@@ -48,6 +48,12 @@ pub enum Commands {
     },
     /// Clears queue
     Clear,
+    /// Undoes the last request of a user, if they have any
+    #[command(arg_required_else_help = true)]
+    Oops {
+        /// The user who invoked the command
+        user: String,
+    },
     /// Moves a user's most recent request to the top of the queue
     #[command(arg_required_else_help = true)]
     Top {
