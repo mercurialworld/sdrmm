@@ -4,7 +4,10 @@ A wrapper for TheBlackParrot's [DumbRequestManager](https://github.com/TheBlackP
 
 This is a CLI program, as it was meant to be called by Mix It Up's "Executable" action.
 
-**THIS REQUIRES DRM v0.6.0 TO WORK.**
+**THIS REQUIRES DRM v0.6.0 OR HIGHER TO WORK.**
+
+> [!IMPORTANT]
+> This is beta software, so if you aren't me and you're using this, there may be unexpected behaviour. Please let me know if there's anything by opening an issue in this repository.
 
 # Commands
 
