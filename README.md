@@ -2,7 +2,7 @@
 
 A wrapper for TheBlackParrot's [DumbRequestManager](https://github.com/TheBlackParrot/DumbRequestManager) that adds filters and request limits. Written in Rust because the first iteration was written in Go and I hated every second of it.
 
-This is a CLI program, as it was meant to be called by Mix It Up's "Executable" action.
+This is a CLI program, as it was meant to be called by Mix It Up's "Executable" action. You also should make sure you give it time to run in your bot software of choice.
 
 **THIS REQUIRES DRM v0.6.0 OR HIGHER TO WORK.**
 
