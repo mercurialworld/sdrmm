@@ -78,7 +78,6 @@ impl DRM {
     }
 
     // all history for the session
-    #[expect(unused)]
     pub async fn history(&self) -> DRMResult<Vec<DRMHistoryItem>> {
         self.get_endpoint("history").await
     }
