@@ -1,12 +1,13 @@
 use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
+use regex::Regex;
 
 use crate::{
-    config::{SDRMMConfig, ignore_config},
+    config::SDRMMConfig,
     database::Database,
     drm::{DRM, schema::DRMMap},
     helpers::{
-        ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec, ignore_or_lt,
-        match_in_two_vecs,
+        ignore_config, ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec,
+        ignore_or_lt, match_in_two_vecs,
     },
 };
 
@@ -16,6 +17,28 @@ fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
 
 fn is_open(db: &Database) -> anyhow::Result<bool> {
     Ok(db.get_queue_status()?)
+}
+
+fn censor(map: &DRMMap) -> bool {
+    map.censor_artist
+        || map.censor_mapper
+        || map.censor_sub_title
+        || map.censor_title
+        || map.metadata_has_spliced_censor
+}
+
+fn map_contains_tlds(map: &DRMMap) -> bool {
+    let tld_regex = Regex::new(r"(\.(com|net|org))").unwrap();
+
+    let to_check = vec![&map.title, &map.sub_title, &map.artist, &map.mapper];
+
+    for field in to_check {
+        if let Some(_) = tld_regex.captures(field) {
+            return true;
+        }
+    }
+
+    false
 }
 
 pub async fn filter_map(
@@ -61,7 +84,7 @@ pub async fn filter_map(
 
     // does the user already have enough stuff in queue?
     if let Ok(in_queue) = drm.queue_where(&user).await
-        && !ignore_or_lt(config.queue.queue_max, in_queue.len() as i32)
+        && !ignore_or_lt(config.queue.queue_max, in_queue.len().try_into().unwrap())
     {
         return Err(format!(
             "You have too many songs in queue! (max is {})",
@@ -71,12 +94,21 @@ pub async fn filter_map(
 
     // did the user request enough maps this session?
     if let Ok(session_reqs) = db.get_user_requests(&user)
-        && !ignore_or_lt(config.queue.session_max, session_reqs)
+        && !ignore_or_lt(config.queue.session_max, session_reqs.try_into().unwrap())
     {
         return Err(format!(
             "You have no more requests this session! (max is {})",
             config.queue.session_max
         ));
+    }
+
+    // does the map have anything that's flagged for censoring?
+    if config.bsr.censors.deny_censored && censor(&map) {
+        // is the thing flagging the censors not a domain?
+        // or, if the thing is a domain, does the user want urls auto-denied?
+        if !map_contains_tlds(map) || config.bsr.censors.deny_urls {
+            return Err("Map has terms that aren't allowed.".into());
+        }
     }
 
     // vote status

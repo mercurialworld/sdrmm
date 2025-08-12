@@ -1,18 +1,18 @@
 use chrono::NaiveDate;
 use config::{Config, ConfigError, File};
-use num::Num;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct DRMConfig {
     pub url: String,
-    pub port: i32,
+    pub port: u32,
+    pub new_session_length: u32,
 }
 
 #[derive(Debug, Deserialize, Default)]
 pub struct QueueConfig {
-    pub session_max: i32,
-    pub queue_max: i32,
+    pub session_max: u32,
+    pub queue_max: u32,
     pub repeat: bool,
     pub replay: bool,
 }
@@ -37,12 +37,19 @@ pub struct FloatRange {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct BSRConfig {
+    pub censors: BSRCensorConfig,
     pub allow_ai: bool,
     pub min_rating: f32,
     pub date: BSRDateConfig,
     pub length: IntRange,
     pub nps: FloatRange,
     pub njs: FloatRange,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct BSRCensorConfig {
+    pub deny_censored: bool,
+    pub deny_urls: bool,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -68,8 +75,4 @@ impl SDRMMConfig {
             .unwrap()
             .try_deserialize::<SDRMMConfig>()
     }
-}
-
-pub fn ignore_config<T: Num>(val: T) -> bool {
-    val.is_zero()
 }

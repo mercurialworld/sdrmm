@@ -1,7 +1,5 @@
 use num::Num;
 
-use crate::config::ignore_config;
-
 #[expect(unused)]
 /// Checks if you need to ignore `config_val`.
 /// If that is false, checks if `to_compare` is greater than `config_val`.
@@ -87,4 +85,11 @@ pub fn match_in_two_vecs(to_find: Vec<String>, find_in: Vec<String>) -> bool {
     }
 
     false
+}
+
+/// Checks if a value is zero.
+///
+/// Returns true if the value is 0, false otherwise.
+pub fn ignore_config<T: Num>(val: T) -> bool {
+    val.is_zero()
 }
