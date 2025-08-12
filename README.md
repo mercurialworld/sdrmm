@@ -51,3 +51,8 @@ map_vote:
 playlists:                     # A list of local playlists a map can be in, in order to auto-allow the map. Can be empty.
     - ""    
 ```
+
+# TODO
+- [ ] more configuration
+  - [ ] make `new_session_length` which mirrors `AssumeNewSessionAfterMinutes` 
+- [ ] configurable string format (look into localization?)
