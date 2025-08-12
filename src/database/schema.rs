@@ -1,7 +1,6 @@
-#[expect(unused)]
 #[derive(Debug)]
 pub struct QueueStatus {
-    pub timestamp: i32,
+    pub timestamp: u32,
     pub open: bool,
 }
 

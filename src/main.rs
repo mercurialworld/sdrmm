@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, TimeDelta, Utc};
 use clap::Parser;
 use tokio::main;
 
@@ -25,24 +25,38 @@ fn format_time(duration: i32) -> String {
     }
 }
 
+// [TODO] PLEASE WRITE THIS BETTER
 async fn new(drm: &DRM, db: &Database) {
-    if let Ok(hist) = drm.history().await
-        && hist.len() == 0
+    let now = Utc::now();
+
+    // difference between last recorded session and now is less than (config value from DRM)
+    if let Some(last_session_time) =
+        DateTime::<Utc>::from_timestamp(db.get_latest_session().unwrap().timestamp.into(), 0)
+        && now.signed_duration_since(last_session_time) > TimeDelta::minutes(60)
     {
-        match drm.queue_control("clear").await {
-            Ok(_) => println!("Queue cleared from in-game!"),
-            Err(_) => println!("Unable to clear queue from in-game."),
-        };
+        // is history empty in-game? if not, then don't bother
+        if let Ok(hist) = drm.history().await
+            && hist.len() == 0
+        {
+            match drm.queue_control("clear").await {
+                Ok(_) => println!("Queue cleared from in-game!"),
+                Err(_) => println!("Unable to clear queue from in-game."),
+            };
 
-        match db.clear_user_requests() {
-            Ok(_) => println!("Cleared requests from database."),
-            Err(_) => println!("Unable to clear requests from database."),
-        };
+            match db.clear_user_requests() {
+                Ok(_) => println!("Cleared requests from database."),
+                Err(_) => println!("Unable to clear requests from database."),
+            };
 
-        match db.new_session(Utc::now(), true) {
-            Ok(_) => println!("Created new session."),
-            Err(_) => println!("Unable to create new session."),
-        };
+            match db.new_session(Utc::now(), true) {
+                Ok(_) => println!("Created new session."),
+                Err(_) => println!("Unable to create new session."),
+            };
+        } else {
+            println!("no need for new session, history already empty");
+        }
+    } else {
+        println!("no need for new session, not long enough");
     }
 }
 

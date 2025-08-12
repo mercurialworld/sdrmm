@@ -56,6 +56,27 @@ impl Database {
         Ok(())
     }
 
+    pub fn get_latest_session(&self) -> DBResult<QueueStatus> {
+        let mut query = self.conn.prepare(
+            "
+            SELECT timestamp, open
+            FROM QueueStatus 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+            ",
+        )?;
+
+        let mut result = query.query_map([], |row| {
+            Ok(QueueStatus {
+                timestamp: row.get(0)?,
+                open: row.get(1)?,
+            })
+        })?;
+
+        // [FIXME] surely there's something better
+        Ok(result.next().unwrap().unwrap())
+    }
+
     pub fn get_queue_status(&self) -> DBResult<bool> {
         let mut query = self.conn.prepare(
             "
