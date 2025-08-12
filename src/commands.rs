@@ -1,4 +1,4 @@
-use clap::{command, ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand, command};
 
 #[derive(Debug, Parser)]
 pub struct SDRMM {

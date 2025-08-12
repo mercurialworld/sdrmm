@@ -26,7 +26,9 @@ fn format_time(duration: i32) -> String {
 }
 
 async fn new(drm: &DRM, db: &Database) {
-    if let Ok(hist) = drm.history().await && hist.len() == 0 {
+    if let Ok(hist) = drm.history().await
+        && hist.len() == 0
+    {
         match drm.queue_control("clear").await {
             Ok(_) => println!("Queue cleared from in-game!"),
             Err(_) => println!("Unable to clear queue from in-game."),
@@ -42,7 +44,6 @@ async fn new(drm: &DRM, db: &Database) {
             Err(_) => println!("Unable to create new session."),
         };
     }
-
 }
 
 async fn get_queue(user: Option<String>, drm: &DRM) {

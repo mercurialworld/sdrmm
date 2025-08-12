@@ -1,11 +1,12 @@
 use chrono::{DateTime, Days, NaiveTime, TimeDelta, Utc};
 
 use crate::{
-    config::{ignore_config, SDRMMConfig},
+    config::{SDRMMConfig, ignore_config},
     database::Database,
-    drm::{schema::DRMMap, DRM},
+    drm::{DRM, schema::DRMMap},
     helpers::{
-        ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec, ignore_or_lt, match_in_two_vecs
+        ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec, ignore_or_lt,
+        match_in_two_vecs,
     },
 };
 
