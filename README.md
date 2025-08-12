@@ -62,5 +62,7 @@ playlists:                     # A list of local playlists a map can be in, in o
 
 # TODO
 - [ ] more configuration
-  - [ ] make `new_session_length` which mirrors `AssumeNewSessionAfterMinutes` 
+  - [X] make `new_session_length` which mirrors `AssumeNewSessionAfterMinutes` 
+  - [X] `!oops`
+  - [ ] `hide_map_metadata` for `!link`
 - [ ] configurable string format (look into localization?)
