@@ -9,6 +9,7 @@ pub fn ignore_or_gt<T: Num + PartialOrd + Clone>(to_compare: T, config_val: T) -
     ignore_config(config_val.clone()) || to_compare > config_val
 }
 
+#[expect(unused)]
 /// Checks if you need to ignore `config_val`.
 /// If that is false, checks if `to_compare` is less than `config_val`.
 ///

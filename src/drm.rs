@@ -77,6 +77,16 @@ impl DRM {
         self.get_endpoint(&format!("queue/{}", subcommands)).await
     }
 
+    // ban
+    pub async fn blacklist(&self, id: &str) -> DRMResult<DRMMessage> {
+        self.get_endpoint(&format!("blacklist/add/{}", id)).await
+    }
+
+    // ban
+    pub async fn unblacklist(&self, id: &str) -> DRMResult<DRMMessage> {
+        self.get_endpoint(&format!("blacklist/remove/{}", id)).await
+    }
+
     // all history for the session
     pub async fn history(&self) -> DRMResult<Vec<DRMHistoryItem>> {
         self.get_endpoint("history").await

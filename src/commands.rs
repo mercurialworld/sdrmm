@@ -25,6 +25,18 @@ pub enum Commands {
         #[clap(action=ArgAction::SetTrue)]
         modadd: Option<bool>,
     },
+    /// Sends a request to DRM's add to blacklist endpoint
+    #[command(arg_required_else_help = true)]
+    Ban {
+        /// The 4-5 digit code of the map on BeatSaver
+        id: String,
+    },
+    /// Sends a request to DRM's remove from blacklist endpoint
+    #[command(arg_required_else_help = true)]
+    Unban {
+        /// The 4-5 digit code of the map on BeatSaver
+        id: String,
+    },
     /// Sends a request to DRM's addWIP endpoint
     #[command(arg_required_else_help = true)]
     Wip {

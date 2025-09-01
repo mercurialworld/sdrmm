@@ -1,6 +1,7 @@
 use chrono::{DateTime, TimeDelta, Utc};
 use clap::Parser;
 use tokio::main;
+use url::Url;
 
 use crate::{
     commands::SDRMM,
@@ -192,7 +193,11 @@ async fn request(
 
 async fn add_wip(wip: String, user: String, drm: &DRM) {
     match drm.wip(&wip, &user).await {
-        Ok(_) => (),
+        Ok(map) => {
+            if let Ok(wip_domain) = Url::parse(&map.bsr_key) {
+                println!("WIP from {} added to queue", wip_domain.host_str().unwrap());
+            }
+        },
         Err(e) => println!("{}", e),
     };
 }
@@ -251,7 +256,7 @@ async fn oops(user: &str, drm: &DRM) -> bool {
 
             // re-request everything!
             for map in new_queue.iter() {
-                let _ = drm.add(&map.bsr_key, &map.user.as_ref().unwrap());
+                let _ = drm.add(&map.bsr_key, &map.user.as_ref().unwrap()).await;
             }
 
             println!("Request {} removed from queue.", last_bsr);
@@ -274,6 +279,20 @@ async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
         } else {
             println!("User not found.");
         }
+    }
+}
+
+async fn ban(bsr: String, drm: &DRM) {
+    match drm.blacklist(&bsr).await {
+        Ok(_) => println!("{} is now banned from being requested.", bsr),
+        Err(_) => todo!("Unable to access DRM."),
+    }
+}
+
+async fn unban(bsr: String, drm: &DRM) {
+    match drm.unblacklist(&bsr).await {
+        Ok(_) => println!("{} can now be requested again.", bsr),
+        Err(_) => todo!("Unable to access DRM."),
     }
 }
 
@@ -310,8 +329,11 @@ async fn main() {
             let res = oops(&user, &drm).await;
 
             if res {
-                refund_request(&user, &db, &sdrmm_config).await
+                refund_request(&user, &db, &sdrmm_config).await;
             }
-        }
+        },
+        commands::Commands::Ban { id } => ban(id, &drm).await,
+        commands::Commands::Unban { id } => unban(id, &drm).await,
+
     }
 }
