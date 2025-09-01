@@ -13,6 +13,8 @@ This is a CLI program, as it was meant to be called by Mix It Up's "Executable" 
 
 - `sdrmm new`: Starts a new session.
 - `sdrmm request <BSR ID> <USERNAME> (--service/-s <PLATFORM>) (--modadd)`: Attempts to add a request of `<BSR ID>` to the queue. Goes through filters. If the `--modadd` flag is present, forces the map in.
+- `sdrmm ban <BSR ID>`: Bans `<BSR ID>` from ever being requested.
+- `sdrmm unban <BSR ID>`: Allows `<BSR ID>` to be requested again.
 - `sdrmm wip <link/WIPBot site code> <USERNAME>`: Adds a WIP to the queue, if it's an allowed link or there's a code.
 - `sdrmm queue <open/close/toggle>`: Changes state of queue (open/close).
 - `sdrmm getqueue (--user/-u <USERNAME>)`: Returns a formatted message with how many songs in the queue and how long the queue is. Optionally, shows where a user's requests are in the queue.
