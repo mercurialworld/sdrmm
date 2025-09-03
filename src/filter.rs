@@ -126,6 +126,11 @@ pub async fn filter_map(
         }
     }
 
+    // temp mapper filter
+    if map.mapper.to_ascii_lowercase().contains("mirage") {
+        return Err("Map is banned from being requested!".into());
+    }
+
     // is map banned?
     if map.blacklisted {
         return Err("Map is banned from being requested!".into());
