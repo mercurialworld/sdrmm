@@ -1,6 +1,6 @@
 # Smart DumbRequestManager Manager
 
-A wrapper for TheBlackParrot's [DumbRequestManager](https://github.com/TheBlackParrot/DumbRequestManager) that adds filters and request limits. Written in Rust because the first iteration was written in Go and I hated every second of it.
+A wrapper for [DumbRequestManager](https://github.com/mercurialworld/DumbRequestManager) (originally by TheBlackParrot) that adds filters and request limits. Written in Rust because the first iteration was written in Go and I hated every second of it.
 
 This is a CLI program, as it was meant to be called by Mix It Up's "Executable" action. You also should make sure you give it time to run in your bot software of choice.
 
