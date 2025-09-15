@@ -68,3 +68,4 @@ playlists:                     # A list of local playlists a map can be in, in o
   - [X] `!oops`
   - [ ] `hide_map_metadata` for `!link`
 - [ ] configurable string format (look into localization?)
+- [ ] have limits be set bot-side
