@@ -33,36 +33,44 @@ fn format_time(duration: i32) -> String {
 // [TODO] PLEASE WRITE THIS BETTER
 async fn new(drm: &DRM, db: &Database, config: &SDRMMConfig) {
     let now = Utc::now();
+    let mut create_new = false;
 
-    // difference between last recorded session and now is less than (config value from DRM)
-    if let Some(last_session_time) =
-        DateTime::<Utc>::from_timestamp(db.get_latest_session().unwrap().timestamp.into(), 0)
-        && now.signed_duration_since(last_session_time)
-            > TimeDelta::minutes(config.drm.new_session_length.into())
-    {
-        // is history empty in-game? if not, then don't bother
-        if let Ok(hist) = drm.history().await
-            && hist.len() == 0
+    // is there even a last session to begin with?
+    if let Ok(last_session) = db.get_latest_session() {
+        // difference between last recorded session and now is less than (config value from DRM)
+        if let Some(last_session_time) =
+            DateTime::<Utc>::from_timestamp(last_session.timestamp.into(), 0)
+            && now.signed_duration_since(last_session_time)
+                > TimeDelta::minutes(config.drm.new_session_length.into())
         {
-            match drm.queue_control("clear").await {
-                Ok(_) => println!("Queue cleared from in-game!"),
-                Err(_) => println!("unable to clear queue from in-game."),
-            };
-
-            match db.clear_user_requests() {
-                Ok(_) => println!("Cleared requests from database."),
-                Err(_) => println!("unable to clear requests from database."),
-            };
-
-            match db.new_session(Utc::now(), true) {
-                Ok(_) => println!("Created new session."),
-                Err(_) => println!("unable to create new session."),
-            };
-        } else {
-            println!("no need for new session, history already empty!");
+            // is history empty in-game?
+            if let Ok(hist) = drm.history().await
+                && hist.len() == 0
+            {
+                create_new = true;
+            }
         }
     } else {
-        println!("no need for new session, not long enough!");
+        create_new = true;
+    }
+
+    if create_new {
+        match drm.queue_control("clear").await {
+            Ok(_) => println!("Queue cleared from in-game!"),
+            Err(_) => println!("unable to clear queue from in-game."),
+        };
+
+        match db.clear_user_requests() {
+            Ok(_) => println!("Cleared requests from database."),
+            Err(_) => println!("unable to clear requests from database."),
+        };
+
+        match db.new_session(Utc::now(), true) {
+            Ok(_) => println!("Created new session."),
+            Err(_) => println!("unable to create new session."),
+        };
+    } else {
+        println!("no need for new session");
     }
 }
 

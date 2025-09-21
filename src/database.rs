@@ -12,6 +12,8 @@ pub enum DatabaseError {
     SqliteError(#[from] rusqlite::Error),
     #[error("User not found")]
     NotFound(i32),
+    #[error("No previous sessions found")]
+    NoSessions()
 }
 
 type DBResult<T> = Result<T, DatabaseError>;
@@ -73,8 +75,11 @@ impl Database {
             })
         })?;
 
-        // [FIXME] surely there's something better
-        Ok(result.next().unwrap().unwrap())
+        // this is fucked up sorry
+        if let Some(session) = result.next() {
+            return Ok(session.unwrap());
+        } 
+        Err(DatabaseError::NoSessions())
     }
 
     pub fn get_queue_status(&self) -> DBResult<bool> {
@@ -94,8 +99,11 @@ impl Database {
             })
         })?;
 
-        // [FIXME] surely there's something better
-        Ok(result.next().unwrap().unwrap().open)
+        // this is fucked up sorry
+        if let Some(session) = result.next() {
+            return Ok(session.unwrap().open);
+        } 
+        Err(DatabaseError::NoSessions())
     }
 
     pub fn set_queue_status(&self, open: bool) -> DBResult<()> {
