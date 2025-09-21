@@ -65,6 +65,7 @@ pub struct SDRMMConfig {
     pub bsr: BSRConfig,
     pub map_vote: MapVoteConfig,
     pub allowed_playlists: Option<Vec<String>>,
+    pub banned_mappers: Option<Vec<String>>,
 }
 
 impl SDRMMConfig {

@@ -7,7 +7,7 @@ use crate::{
     drm::{DRM, schema::DRMMap},
     helpers::{
         ignore_config, ignore_or_geq, ignore_or_geq_vec, ignore_or_leq, ignore_or_leq_vec,
-        match_in_two_vecs,
+        match_in_two_vecs, str_contains_str_element,
     },
 };
 
@@ -129,6 +129,13 @@ pub async fn filter_map(
     // is map banned?
     if map.blacklisted {
         return Err("Map is banned from being requested!".into());
+    }
+
+    // is map made by a banned mapper?
+    if let Some(banned_mappers) = &config.banned_mappers
+        && str_contains_str_element(&map.mapper, &banned_mappers)
+    {
+        return Err("Unable to add map to queue.".into());
     }
 
     // is map in an allowed playlist?

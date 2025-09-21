@@ -197,7 +197,7 @@ async fn add_wip(wip: String, user: String, drm: &DRM) {
             if let Ok(wip_domain) = Url::parse(&map.bsr_key) {
                 println!("WIP from {} added to queue", wip_domain.host_str().unwrap());
             }
-        },
+        }
         Err(e) => println!("{}", e),
     };
 }
@@ -331,9 +331,8 @@ async fn main() {
             if res {
                 refund_request(&user, &db, &sdrmm_config).await;
             }
-        },
+        }
         commands::Commands::Ban { id } => ban(id, &drm).await,
         commands::Commands::Unban { id } => unban(id, &drm).await,
-
     }
 }

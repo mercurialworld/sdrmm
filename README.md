@@ -59,6 +59,8 @@ map_vote:
     allow_liked: true          # Whether to auto-allow maps that have been liked.
     deny_disliked: true        # Whether to deny maps that have been disliked.
 playlists:                     # A list of local playlists a map can be in, in order to auto-allow the map. Can be empty.
+    - ""
+banned_mappers:                # For parity with BeatSaberPlus' "banned mappers" thing.
     - ""    
 ```
 

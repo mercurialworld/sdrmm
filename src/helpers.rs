@@ -88,6 +88,22 @@ pub fn match_in_two_vecs(to_find: Vec<String>, find_in: Vec<String>) -> bool {
     false
 }
 
+/// Checks if any element in `str_list` is somewhere in `str`.
+///
+/// Returns true if at least one element in `str_list` is contained in `str`.
+pub fn str_contains_str_element(str: &String, str_list: &Vec<String>) -> bool {
+    for item in str_list {
+        if str
+            .to_ascii_lowercase()
+            .contains(&item.to_ascii_lowercase())
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
 /// Checks if a value is zero.
 ///
 /// Returns true if the value is 0, false otherwise.
