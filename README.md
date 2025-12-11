@@ -70,3 +70,7 @@ banned_mappers:                # For parity with BeatSaberPlus' "banned mappers"
   - [ ] `hide_map_metadata` for `!link`
 - [ ] configurable string format (look into localization?)
 - [ ] have limits be set bot-side
+
+# Note to self
+
+you fool. remember to run `dist` generate after every release
