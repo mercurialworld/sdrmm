@@ -1,8 +1,6 @@
-use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 use thiserror::Error;
 
-use crate::database::schema::QueueStatus;
 
 pub(crate) mod schema;
 
@@ -12,8 +10,6 @@ pub enum DatabaseError {
     SqliteError(#[from] rusqlite::Error),
     #[error("User not found")]
     NotFound(i32),
-    #[error("No previous sessions found")]
-    NoSessions()
 }
 
 type DBResult<T> = Result<T, DatabaseError>;
@@ -31,94 +27,11 @@ impl Database {
 
     pub fn init_db(&self) -> DBResult<()> {
         self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS QueueStatus(
-            timestamp INTEGER PRIMARY KEY,
-            open      INTEGER
-        )",
-            (),
-        )?;
-
-        self.conn.execute(
             "CREATE TABLE IF NOT EXISTS SessionRequests(
             user      TEXT PRIMARY KEY,
             requests  INTEGER
         )",
             (),
-        )?;
-
-        Ok(())
-    }
-
-    pub fn new_session(&self, timestamp: DateTime<Utc>, open: bool) -> DBResult<()> {
-        self.conn.execute(
-            "INSERT INTO QueueStatus (timestamp, open) VALUES (?1, ?2)",
-            (&timestamp.timestamp(), &open),
-        )?;
-
-        Ok(())
-    }
-
-    pub fn get_latest_session(&self) -> DBResult<QueueStatus> {
-        let mut query = self.conn.prepare(
-            "
-            SELECT timestamp, open
-            FROM QueueStatus 
-            ORDER BY timestamp DESC 
-            LIMIT 1
-            ",
-        )?;
-
-        let mut result = query.query_map([], |row| {
-            Ok(QueueStatus {
-                timestamp: row.get(0)?,
-                open: row.get(1)?,
-            })
-        })?;
-
-        // this is fucked up sorry
-        if let Some(session) = result.next() {
-            return Ok(session.unwrap());
-        } 
-        Err(DatabaseError::NoSessions())
-    }
-
-    pub fn get_queue_status(&self) -> DBResult<bool> {
-        let mut query = self.conn.prepare(
-            "
-            SELECT timestamp, open
-            FROM QueueStatus 
-            ORDER BY timestamp DESC 
-            LIMIT 1
-            ",
-        )?;
-
-        let mut result = query.query_map([], |row| {
-            Ok(QueueStatus {
-                timestamp: row.get(0)?,
-                open: row.get(1)?,
-            })
-        })?;
-
-        // this is fucked up sorry
-        if let Some(session) = result.next() {
-            return Ok(session.unwrap().open);
-        } 
-        Err(DatabaseError::NoSessions())
-    }
-
-    pub fn set_queue_status(&self, open: bool) -> DBResult<()> {
-        self.conn.execute(
-            "
-            WITH CurrentSession AS (
-                SELECT timestamp, open 
-                FROM QueueStatus 
-                ORDER BY timestamp DESC 
-                LIMIT 1
-            )
-            UPDATE QueueStatus 
-            SET open=?1 
-            WHERE timestamp=(SELECT timestamp FROM CurrentSession)",
-            (&open,),
         )?;
 
         Ok(())

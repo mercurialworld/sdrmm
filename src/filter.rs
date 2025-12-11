@@ -15,8 +15,11 @@ fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
     map_date.signed_duration_since(min_date) > TimeDelta::zero()
 }
 
-fn is_open(db: &Database) -> anyhow::Result<bool> {
-    Ok(db.get_queue_status()?)
+async fn is_open(drm: &DRM) -> anyhow::Result<bool> {
+    match drm.queue_status().await {
+        Ok(s) => Ok(s.queue_open),
+        Err(e) => Err(e.into())
+    }
 }
 
 fn censor(map: &DRMMap) -> bool {
@@ -67,7 +70,7 @@ pub async fn filter_map(
     }
 
     // is queue closed?
-    match is_open(db) {
+    match is_open(drm).await {
         Ok(open) => {
             if !open {
                 return Err("Queue is closed!".into());

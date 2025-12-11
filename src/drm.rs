@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use thiserror::Error;
 use url::Url;
 
-use crate::drm::schema::{DRMHistoryItem, DRMMap, DRMMessage, DRMQueueItem};
+use crate::drm::schema::{DRMHistoryItem, DRMMap, DRMMessage, DRMQueueItem, DRMQueueMessage};
 
 pub(crate) mod schema;
 
@@ -75,6 +75,11 @@ impl DRM {
     // clear/open/move/shuffle
     pub async fn queue_control(&self, subcommands: &str) -> DRMResult<DRMMessage> {
         self.get_endpoint(&format!("queue/{}", subcommands)).await
+    }
+
+    // queue status
+    pub async fn queue_status(&self) -> DRMResult<DRMQueueMessage> {
+        self.get_endpoint("queue/status").await
     }
 
     // ban

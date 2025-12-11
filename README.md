@@ -31,7 +31,6 @@ The config is written in YAML. sdrmm expects the config to be called `config.yam
 drm:
     url: "http://localhost"    # The URL where the DRM server is hosted.
     port: 13337                # The port of the DRM server.
-    new_session_length: 60     # Time, in minutes, to consider a session "new".
 queue:
     session_max: 0    # How many maps can be requested per session. Set to 0 to ignore.
     queue_max: 0      # How many maps of a user can be in the queue. Set to 0 to ignore.

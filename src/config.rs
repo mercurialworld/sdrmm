@@ -6,7 +6,6 @@ use serde::Deserialize;
 pub struct DRMConfig {
     pub url: String,
     pub port: u32,
-    pub new_session_length: u32,
 }
 
 #[derive(Debug, Deserialize, Default)]

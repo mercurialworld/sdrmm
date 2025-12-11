@@ -111,3 +111,9 @@ pub struct DRMHistoryItem {
 pub struct DRMMessage {
     pub message: String,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct DRMQueueMessage {
+    pub queue_open: bool,
+}

@@ -1,4 +1,3 @@
-use chrono::{DateTime, TimeDelta, Utc};
 use clap::Parser;
 use tokio::main;
 use url::Url;
@@ -30,29 +29,16 @@ fn format_time(duration: i32) -> String {
     }
 }
 
-// [TODO] PLEASE WRITE THIS BETTER
-async fn new(drm: &DRM, db: &Database, config: &SDRMMConfig) {
-    let now = Utc::now();
+async fn new(drm: &DRM, db: &Database) {
     let mut create_new = false;
 
-    // is there even a last session to begin with?
-    if let Ok(last_session) = db.get_latest_session() {
-        // difference between last recorded session and now is less than (config value from DRM)
-        if let Some(last_session_time) =
-            DateTime::<Utc>::from_timestamp(last_session.timestamp.into(), 0)
-            && now.signed_duration_since(last_session_time)
-                > TimeDelta::minutes(config.drm.new_session_length.into())
-        {
-            // is history empty in-game?
-            if let Ok(hist) = drm.history().await
-                && hist.len() == 0
-            {
-                create_new = true;
-            }
-        }
-    } else {
+    // is history empty in-game?
+    if let Ok(hist) = drm.history().await
+        && hist.len() == 0
+    {
         create_new = true;
     }
+
 
     if create_new {
         match drm.queue_control("clear").await {
@@ -63,11 +49,6 @@ async fn new(drm: &DRM, db: &Database, config: &SDRMMConfig) {
         match db.clear_user_requests() {
             Ok(_) => println!("Cleared requests from database."),
             Err(_) => println!("unable to clear requests from database."),
-        };
-
-        match db.new_session(Utc::now(), true) {
-            Ok(_) => println!("Created new session."),
-            Err(_) => println!("unable to create new session."),
         };
     } else {
         println!("no need for new session");
@@ -117,7 +98,7 @@ async fn get_queue(user: Option<String>, drm: &DRM) {
     }
 }
 
-async fn set_queue(open: bool, drm: &DRM, db: &Database) {
+async fn set_queue(open: bool, drm: &DRM) {
     match drm
         .queue_control(&format!("open/{}", open.to_string()))
         .await
@@ -125,20 +106,14 @@ async fn set_queue(open: bool, drm: &DRM, db: &Database) {
         Ok(_) => (),
         Err(_) => println!("Unable to set queue status in-game."),
     }
-
-    match db.set_queue_status(open) {
-        Ok(_) => (),
-        Err(e) => println!("{:?}", e),
-        // Err(_) => println!("Unable to set queue status in database."),
-    }
 }
 
-async fn queue(command: String, drm: &DRM, db: &Database) {
+async fn queue(command: String, drm: &DRM) {
     match command.as_str() {
-        "open" => set_queue(true, drm, db).await,
-        "close" => set_queue(false, drm, db).await,
-        "toggle" => match db.get_queue_status() {
-            Ok(s) => set_queue(!s, drm, db).await,
+        "open" => set_queue(true, drm).await,
+        "close" => set_queue(false, drm).await,
+        "toggle" => match drm.queue_status().await {
+            Ok(s) => set_queue(!s.queue_open, drm).await,
             Err(_) => (),
         },
         &_ => println!("Possible commands are open/close/toggle."),
@@ -319,7 +294,7 @@ async fn main() {
     let args = SDRMM::parse();
 
     match args.command {
-        commands::Commands::New => new(&drm, &db, &sdrmm_config).await,
+        commands::Commands::New => new(&drm, &db).await,
         commands::Commands::Request {
             id,
             user,
@@ -327,7 +302,7 @@ async fn main() {
             modadd,
         } => request(id, user, service, modadd, &drm, &db, sdrmm_config).await,
         commands::Commands::Wip { wip, user } => add_wip(wip, user, &drm).await,
-        commands::Commands::Queue { command } => queue(command, &drm, &db).await,
+        commands::Commands::Queue { command } => queue(command, &drm).await,
         commands::Commands::GetQueue { user } => get_queue(Some(user), &drm).await,
         commands::Commands::Clear => clear_queue(&drm, &db).await,
         commands::Commands::Top { user } => move_to_top(&user, &drm).await,
