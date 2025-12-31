@@ -92,6 +92,13 @@ pub struct DRMMap {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+pub struct DRMVersionItem {
+    pub game_version: String,
+    pub mod_version: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct DRMQueueItem {
     pub spot: i32,
     pub queue_item: DRMMap,

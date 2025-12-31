@@ -65,6 +65,14 @@ pub enum Commands {
     Oops {
         /// The user who invoked the command
         user: String,
+        /// The map to remove, if any.
+        id: Option<String>,
+    },
+    /// Removes a map from the queue. Meant to be used by moderators.
+    #[command(arg_required_else_help = true)]
+    Remove {
+        /// The map to remove
+        id: String,
     },
     /// Moves a user's most recent request to the top of the queue
     #[command(arg_required_else_help = true)]
@@ -80,4 +88,6 @@ pub enum Commands {
     },
     /// Gets a formatted message with current map information
     Link,
+    /// Gets the version of the game and the mod
+    Version,
 }

@@ -1,3 +1,4 @@
+
 use clap::Parser;
 use tokio::main;
 use url::Url;
@@ -6,7 +7,10 @@ use crate::{
     commands::SDRMM,
     config::SDRMMConfig,
     database::Database,
-    drm::{DRM, schema::DRMMap},
+    drm::{
+        DRM,
+        schema::{DRMMap},
+    },
     filter::filter_map,
 };
 
@@ -38,7 +42,6 @@ async fn new(drm: &DRM, db: &Database) {
     {
         create_new = true;
     }
-
 
     if create_new {
         match drm.queue_control("clear").await {
@@ -80,12 +83,12 @@ async fn get_queue(user: Option<String>, drm: &DRM) {
 
                 match user_maps.len() {
                     0 => (),
-                    1 => print!(" Your map is in position {}.", user_maps[0].spot),
+                    1 => print!(" Your map: {} ({}).", user_maps[0].spot, user_maps[0].queue_item.title),
                     _ => print!(
-                        " Your maps are in positions {}.",
+                        " Your maps: {}.",
                         user_maps
                             .iter()
-                            .map(|map| map.spot.to_string())
+                            .map(|m| format!("{} ({})", m.spot, m.queue_item.title))
                             .collect::<Vec<String>>()
                             .join(", ")
                     ),
@@ -213,43 +216,79 @@ async fn move_to_top(user: &str, drm: &DRM) {
     }
 }
 
-async fn oops(user: &str, drm: &DRM) -> bool {
-    // check if there's a queue
-    if let Ok(current_queue) = drm.queue().await
-        && current_queue.len() > 0
-    {
-        // check if user has requests in queue
-        let user_reqs: Vec<&DRMMap> = current_queue
-            .iter()
-            .filter(|&m| m.user.as_ref().unwrap() == user)
-            .collect();
-
-        if user_reqs.len() > 0 {
-            // get last request
-            let last_bsr = &user_reqs.last().unwrap().bsr_key;
-
-            // create queue with request removed
-            let new_queue: Vec<&DRMMap> = current_queue
-                .iter()
-                .filter(|&m| m.bsr_key != *last_bsr)
-                .collect();
-
-            // clear queue
-            let _ = drm.queue_control("clear").await;
-
-            // re-request everything!
-            for map in new_queue.iter() {
-                let _ = drm.add(&map.bsr_key, &map.user.as_ref().unwrap()).await;
+async fn oops(user: &str, id: Option<String>, drm: &DRM) -> bool {
+    match drm.queue().await {
+        Ok(q) => {
+            if q.len() == 0 {
+                println!("Queue is empty!");
+                return false;
             }
 
-            println!("Request {} removed from queue.", last_bsr);
+            let reqs: Vec<&DRMMap> = q
+                .iter()
+                .filter(|&m| m.user.clone().unwrap_or("".into()) == user)
+                .collect();
 
-            return true;
+            // if they have no requests in queue
+            if reqs.len() == 0 {
+                println!("You have no requests in queue!");
+                return false;
+            } else {
+                let key_to_remove: String;
+
+                if let Some(bsr) = id {
+                    // if user specified a bsr, check if it's their request
+                    let to_remove = reqs.iter().find(|&&m| m.bsr_key.clone() == bsr);
+
+                    match to_remove {
+                        Some(_) => key_to_remove = bsr,
+                        None => {
+                            println!("Map {} is either not in the queue or is not your request!", bsr);
+                            return false;
+                        }
+                    }
+                } else {
+                    // if not, get their recent one
+                    key_to_remove = drm
+                        .queue_where(user)
+                        .await
+                        .unwrap()
+                        .iter()
+                        .last()
+                        .unwrap()
+                        .queue_item
+                        .bsr_key
+                        .clone();
+                }
+
+                match drm.remove(&key_to_remove).await {
+                    Ok(map) => {
+                        println!("Map {} removed from queue.", map.bsr_key);
+                        return true;
+                    }
+                    Err(_) => {
+                        println!("Unable to remove map from queue.");
+                        return false;
+                    }
+                }
+            }
+        }
+        Err(_) => {
+            println!("Unable to get queue.");
+            return false;
         }
     }
-    println!("Unable to remove recent request from queue.");
+}
 
-    false
+async fn remove(id: String, drm: &DRM) {
+    match drm.remove(&id).await {
+        Ok(m) => {
+            println!("Map {} removed from queue.", m.bsr_key);
+        },
+        Err(_) => {
+            println!("Unable to remove map from queue.")
+        },
+    }
 }
 
 async fn refund_request(user: &str, db: &Database, config: &SDRMMConfig) {
@@ -276,6 +315,17 @@ async fn unban(bsr: String, drm: &DRM) {
     match drm.unblacklist(&bsr).await {
         Ok(_) => println!("{} can now be requested again.", bsr),
         Err(_) => todo!("Unable to access DRM."),
+    }
+}
+
+async fn version(drm: &DRM) {
+    match drm.version().await {
+        Ok(v) => println!(
+            "Beat Saber v{}, DumbRequestManager v{}",
+            v.game_version,
+            v.mod_version.split("+").collect::<Vec<&str>>()[0]
+        ),
+        Err(_) => println!("Unable to access DRM"),
     }
 }
 
@@ -308,14 +358,16 @@ async fn main() {
         commands::Commands::Top { user } => move_to_top(&user, &drm).await,
         commands::Commands::Refund { user } => refund_request(&user, &db, &sdrmm_config).await,
         commands::Commands::Link => get_link(&drm).await,
-        commands::Commands::Oops { user } => {
-            let res = oops(&user, &drm).await;
+        commands::Commands::Oops { user, id } => {
+            let res = oops(&user, id, &drm).await;
 
             if res {
                 refund_request(&user, &db, &sdrmm_config).await;
             }
-        }
+        },
+        commands::Commands::Remove { id } => remove(id, &drm).await,
         commands::Commands::Ban { id } => ban(id, &drm).await,
         commands::Commands::Unban { id } => unban(id, &drm).await,
+        commands::Commands::Version => version(&drm).await,
     }
 }

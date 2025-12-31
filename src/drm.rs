@@ -3,7 +3,9 @@ use serde::de::DeserializeOwned;
 use thiserror::Error;
 use url::Url;
 
-use crate::drm::schema::{DRMHistoryItem, DRMMap, DRMMessage, DRMQueueItem, DRMQueueMessage};
+use crate::drm::schema::{
+    DRMHistoryItem, DRMMap, DRMMessage, DRMQueueItem, DRMQueueMessage, DRMVersionItem,
+};
 
 pub(crate) mod schema;
 
@@ -114,6 +116,11 @@ impl DRM {
             .await
     }
 
+    // remove map from queue
+    pub async fn remove(&self, id: &str) -> DRMResult<DRMMap> {
+        self.get_endpoint(&format!("removeKey/{}", id)).await
+    }
+
     // add wip to queue
     pub async fn wip(&self, wip: &str, user: &str) -> DRMResult<DRMMap> {
         let drm_url = Url::parse(&self.url)
@@ -138,5 +145,10 @@ impl DRM {
             .await?;
 
         serde_json::from_str::<DRMMap>(&res).map_err(ClientError::SerdeError)
+    }
+
+    // mod/game version
+    pub async fn version(&self) -> DRMResult<DRMVersionItem> {
+        self.get_endpoint("/version").await
     }
 }
