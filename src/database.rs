@@ -1,7 +1,6 @@
 use rusqlite::Connection;
 use thiserror::Error;
 
-
 pub(crate) mod schema;
 
 #[derive(Debug, Error)]

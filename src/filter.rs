@@ -18,7 +18,7 @@ fn is_recent(map_date: DateTime<Utc>, min_date: DateTime<Utc>) -> bool {
 async fn is_open(drm: &DRM) -> anyhow::Result<bool> {
     match drm.queue_status().await {
         Ok(s) => Ok(s.queue_open),
-        Err(e) => Err(e.into())
+        Err(e) => Err(e.into()),
     }
 }
 
