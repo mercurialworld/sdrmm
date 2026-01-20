@@ -1,4 +1,3 @@
-
 use clap::Parser;
 use tokio::main;
 use url::Url;
@@ -7,10 +6,7 @@ use crate::{
     commands::SDRMM,
     config::SDRMMConfig,
     database::Database,
-    drm::{
-        DRM,
-        schema::{DRMMap},
-    },
+    drm::{DRM, schema::DRMMap},
     filter::filter_map,
 };
 
@@ -83,7 +79,10 @@ async fn get_queue(user: Option<String>, drm: &DRM) {
 
                 match user_maps.len() {
                     0 => (),
-                    1 => print!(" Your map: {} ({}).", user_maps[0].spot, user_maps[0].queue_item.title),
+                    1 => print!(
+                        " Your map: {} ({}).",
+                        user_maps[0].spot, user_maps[0].queue_item.title
+                    ),
                     _ => print!(
                         " Your maps: {}.",
                         user_maps
@@ -243,7 +242,10 @@ async fn oops(user: &str, id: Option<String>, drm: &DRM) -> bool {
                     match to_remove {
                         Some(_) => key_to_remove = bsr,
                         None => {
-                            println!("Map {} is either not in the queue or is not your request!", bsr);
+                            println!(
+                                "Map {} is either not in the queue or is not your request!",
+                                bsr
+                            );
                             return false;
                         }
                     }
@@ -284,10 +286,10 @@ async fn remove(id: String, drm: &DRM) {
     match drm.remove(&id).await {
         Ok(m) => {
             println!("Map {} removed from queue.", m.bsr_key);
-        },
+        }
         Err(_) => {
             println!("Unable to remove map from queue.")
-        },
+        }
     }
 }
 
@@ -364,7 +366,7 @@ async fn main() {
             if res {
                 refund_request(&user, &db, &sdrmm_config).await;
             }
-        },
+        }
         commands::Commands::Remove { id } => remove(id, &drm).await,
         commands::Commands::Ban { id } => ban(id, &drm).await,
         commands::Commands::Unban { id } => unban(id, &drm).await,
